@@ -61,6 +61,7 @@ export default function Home() {
         }
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("生成失败:", error);
     } finally {
       setIsGenerating(false);

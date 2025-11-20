@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // 系统提示词，定义吐槽风格
+// 在集成真实模型API时会用到这个prompt
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SYSTEM_PROMPT = `你是一个嘴替机器人，专门帮用户发泄情绪。用户会告诉你他们遇到的糟心事，你需要用犀利、幽默、带有"国粹"风格的语言帮他们吐槽出来。
 
 要求：
@@ -52,6 +54,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ roast: mockRoast });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("生成吐槽失败:", error);
 
     return NextResponse.json({ error: "生成失败" }, { status: 500 });

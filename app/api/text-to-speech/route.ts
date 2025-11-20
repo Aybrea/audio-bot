@@ -62,13 +62,21 @@ export async function POST(request: NextRequest) {
 
     // 示例3: 临时返回空音频，用于测试
     // 实际使用时请替换为真实的TTS服务
-    console.log("TTS请求:", { text: text.substring(0, 50) + "...", hasVoiceSample: !!voiceSample });
+    // eslint-disable-next-line no-console
+    console.log("TTS请求:", {
+      text: text.substring(0, 50) + "...",
+      hasVoiceSample: !!voiceSample,
+    });
 
     return NextResponse.json(
-      { error: "TTS服务未配置，请在 app/api/text-to-speech/route.ts 中配置你的TTS服务" },
-      { status: 501 }
+      {
+        error:
+          "TTS服务未配置，请在 app/api/text-to-speech/route.ts 中配置你的TTS服务",
+      },
+      { status: 501 },
     );
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("TTS生成失败:", error);
 
     return NextResponse.json({ error: "TTS生成失败" }, { status: 500 });

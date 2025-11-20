@@ -48,6 +48,7 @@ export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("无法访问麦克风:", error);
       alert("无法访问麦克风，请检查权限设置");
     }
@@ -93,10 +94,10 @@ export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
 
       {isRecording && (
         <Progress
+          isIndeterminate
           aria-label="录音进度"
           className="max-w-md"
           color="danger"
-          isIndeterminate
           size="sm"
         />
       )}
@@ -104,7 +105,8 @@ export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
       {audioUrl && !isRecording && (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-default-500">录音预览:</p>
-          <audio controls src={audioUrl} className="w-full max-w-md" />
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <audio controls className="w-full max-w-md" src={audioUrl} />
         </div>
       )}
     </div>

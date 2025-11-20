@@ -57,6 +57,7 @@ export function AudioPlayer({ src }: AudioPlayerProps) {
 
   return (
     <div className="flex flex-col gap-3 p-4 bg-default-100 rounded-lg">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={src} />
       <div className="flex items-center gap-4">
         <Button
@@ -68,19 +69,11 @@ export function AudioPlayer({ src }: AudioPlayerProps) {
           onPress={togglePlay}
         >
           {isPlaying ? (
-            <svg
-              className="w-6 h-6"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
             </svg>
           ) : (
-            <svg
-              className="w-6 h-6"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z" />
             </svg>
           )}

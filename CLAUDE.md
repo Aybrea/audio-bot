@@ -13,15 +13,33 @@ bun run start    # Start production server
 
 ## Architecture
 
-This is a Next.js 15 app using the App Router with HeroUI (v2) component library, Tailwind CSS 4, and TypeScript.
+This is a "嘴替机器人" (Roast Bot) - a Next.js 15 app that lets users record their voice, describe something they want to complain about, and have AI generate a roast in their own voice.
 
 ### Project Structure
 
 - `app/` - Next.js App Router pages and layouts
-- `components/` - Reusable React components (navbar, theme-switch, icons, primitives)
+  - `app/api/generate-roast/` - API endpoint for AI to generate roast text
+  - `app/api/text-to-speech/` - API endpoint for TTS voice synthesis
+- `components/` - Reusable React components
+  - `voice-recorder.tsx` - Records user's voice sample using Web Audio API
+  - `audio-player.tsx` - Custom audio player with progress bar
+  - `navbar.tsx`, `theme-switch.tsx`, `icons.tsx` - UI components
 - `config/` - Site configuration (`site.ts` for nav items/links, `fonts.ts` for fonts)
 - `styles/` - Global CSS
 - `types/` - TypeScript type definitions
+
+### Key Features
+
+1. **Voice Recording**: Uses browser MediaRecorder API to capture user's voice sample
+2. **AI Roast Generation**: API route at `/api/generate-roast` generates roast text (needs custom LLM integration)
+3. **Voice Cloning TTS**: API route at `/api/text-to-speech` synthesizes speech (needs TTS service integration)
+4. **Audio Playback**: Custom player component with play/pause and progress tracking
+
+### Integration Points
+
+- `app/api/generate-roast/route.ts`: Replace mock implementation with your deployed LLM API
+- `app/api/text-to-speech/route.ts`: Integrate TTS service (Fish Audio, ElevenLabs, etc.)
+- `.env.local`: Configure API keys for MODEL_API_KEY, FISH_AUDIO_API_KEY, etc.
 
 ### Key Patterns
 
