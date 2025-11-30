@@ -13,33 +13,34 @@ bun run start    # Start production server
 
 ## Architecture
 
-This is a "嘴替机器人" (Roast Bot) - a Next.js 15 app that lets users record their voice, describe something they want to complain about, and have AI generate a roast in their own voice.
+This is a "嘴替机器人" (Voice Conversion Bot) - a Next.js 15 app that lets users record their voice rant and convert it to a different voice using AI voice conversion.
 
 ### Project Structure
 
 - `app/` - Next.js App Router pages and layouts
-  - `app/api/generate-roast/` - API endpoint for AI to generate roast text
-  - `app/api/text-to-speech/` - API endpoint for TTS voice synthesis
+  - `app/api/voice-convert/` - API endpoint for voice conversion
 - `components/` - Reusable React components
-  - `voice-recorder.tsx` - Records user's voice sample using Web Audio API
+  - `voice-recorder.tsx` - Records user's voice using Web Audio API
   - `audio-player.tsx` - Custom audio player with progress bar
   - `navbar.tsx`, `theme-switch.tsx`, `icons.tsx` - UI components
+- `lib/` - Utility libraries
+  - `triton-vc-client.ts` - gRPC client for Triton voice conversion service
+  - `audio-utils.ts` - Audio processing utilities (WAV parsing, resampling)
 - `config/` - Site configuration (`site.ts` for nav items/links, `fonts.ts` for fonts)
 - `styles/` - Global CSS
 - `types/` - TypeScript type definitions
 
 ### Key Features
 
-1. **Voice Recording**: Uses browser MediaRecorder API to capture user's voice sample
-2. **AI Roast Generation**: API route at `/api/generate-roast` generates roast text (needs custom LLM integration)
-3. **Voice Cloning TTS**: API route at `/api/text-to-speech` synthesizes speech (needs TTS service integration)
+1. **Voice Recording**: Uses browser MediaRecorder API to capture user's rant
+2. **Voice Conversion**: API route at `/api/voice-convert` converts voice using Triton gRPC service
+3. **Target Voice Selection**: Users can choose preset voices or upload custom voice sample
 4. **Audio Playback**: Custom player component with play/pause and progress tracking
 
 ### Integration Points
 
-- `app/api/generate-roast/route.ts`: Replace mock implementation with your deployed LLM API
-- `app/api/text-to-speech/route.ts`: Integrate TTS service (Fish Audio, ElevenLabs, etc.)
-- `.env.local`: Configure API keys for MODEL_API_KEY, FISH_AUDIO_API_KEY, etc.
+- `lib/triton-vc-client.ts`: gRPC client for Triton Inference Server
+- `.env.local`: Configure `VC_SERVER_ADDRESS`, `VC_SERVER_PORT`, `VC_MODEL_NAME`, `VC_SAMPLE_RATE`
 
 ### Key Patterns
 

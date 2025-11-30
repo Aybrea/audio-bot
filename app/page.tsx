@@ -2,138 +2,196 @@
 
 import { useState } from "react";
 import { Button } from "@heroui/button";
-import { Textarea } from "@heroui/input";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Spinner } from "@heroui/spinner";
+import { Radio, RadioGroup } from "@heroui/radio";
 
 import { title } from "@/components/primitives";
 import { VoiceRecorder } from "@/components/voice-recorder";
 import { AudioPlayer } from "@/components/audio-player";
 
 export default function Home() {
-  const [complaint, setComplaint] = useState("");
-  const [roastText, setRoastText] = useState("");
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [voiceSample, setVoiceSample] = useState<Blob | null>(null);
+  const [sourceAudio, setSourceAudio] = useState<Blob | null>(null);
+  const [targetAudio, setTargetAudio] = useState<Blob | null>(null);
+  const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+  const [targetMode, setTargetMode] = useState<"preset" | "custom">("preset");
+  const [presetVoice, setPresetVoice] = useState("default");
 
-  const handleVoiceRecorded = (blob: Blob) => {
-    setVoiceSample(blob);
+  const handleSourceRecorded = (blob: Blob) => {
+    setSourceAudio(blob);
   };
 
-  const handleGenerate = async () => {
-    if (!complaint.trim()) return;
+  const handleTargetRecorded = (blob: Blob) => {
+    setTargetAudio(blob);
+  };
 
-    setIsGenerating(true);
-    setRoastText("");
-    setAudioUrl(null);
+  const handleConvert = async () => {
+    if (!sourceAudio) return;
+
+    setIsConverting(true);
+    setResultAudioUrl(null);
 
     try {
-      // 调用AI生成吐槽内容
-      const roastResponse = await fetch("/api/generate-roast", {
+      const formData = new FormData();
+
+      formData.append("sourceAudio", sourceAudio);
+
+      // 如果是自定义目标声音，上传目标音频
+      if (targetMode === "custom" && targetAudio) {
+        formData.append("targetAudio", targetAudio);
+      } else {
+        // 使用预设声音
+        formData.append("presetVoice", presetVoice);
+      }
+
+      const response = await fetch("/api/voice-convert", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ complaint }),
+        body: formData,
       });
 
-      if (!roastResponse.ok) throw new Error("生成吐槽失败");
+      if (response.ok) {
+        const audioBlob = await response.blob();
 
-      const { roast } = await roastResponse.json();
+        setResultAudioUrl(URL.createObjectURL(audioBlob));
+      } else {
+        const error = await response.text();
 
-      setRoastText(roast);
-
-      // 调用TTS生成语音
-      if (voiceSample) {
-        const formData = new FormData();
-
-        formData.append("text", roast);
-        formData.append("voiceSample", voiceSample);
-
-        const ttsResponse = await fetch("/api/text-to-speech", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (ttsResponse.ok) {
-          const audioBlob = await ttsResponse.blob();
-
-          setAudioUrl(URL.createObjectURL(audioBlob));
-        }
+        // eslint-disable-next-line no-console
+        console.error("语音转换失败:", error);
+        alert("语音转换失败，请重试");
       }
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error("生成失败:", error);
+      console.error("请求失败:", error);
+      alert("请求失败，请检查网络连接");
     } finally {
-      setIsGenerating(false);
+      setIsConverting(false);
     }
   };
+
+  const canConvert = sourceAudio && (targetMode === "preset" || targetAudio);
 
   return (
     <section className="flex flex-col items-center justify-center gap-6 py-8 md:py-10">
       <div className="inline-block max-w-xl text-center justify-center">
         <h1 className={title()}>嘴替机器人</h1>
         <p className="mt-4 text-default-600">
-          说出你想吐槽的事情，让AI用你的声音帮你骂出来
+          录制你的吐槽，用别人的声音说出来
         </p>
       </div>
 
+      {/* 第一步：录制吐槽语音 */}
       <Card className="w-full max-w-2xl">
         <CardHeader className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold">第一步：录制你的声音</h2>
+          <h2 className="text-lg font-semibold">第一步：录制你的吐槽</h2>
           <p className="text-sm text-default-500">
-            录制一段你的声音样本，用于克隆你的声音
+            说出你想吐槽的内容，尽情发挥
           </p>
         </CardHeader>
-        <CardBody>
-          <VoiceRecorder onRecorded={handleVoiceRecorded} />
-          {voiceSample && (
-            <p className="mt-2 text-sm text-success">声音样本已录制</p>
+        <CardBody className="gap-3">
+          <VoiceRecorder onRecorded={handleSourceRecorded} />
+          {sourceAudio && (
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-success">✓ 吐槽语音已录制</p>
+              <Button
+                color="default"
+                size="sm"
+                variant="flat"
+                onPress={() => setSourceAudio(null)}
+              >
+                重新录制
+              </Button>
+            </div>
           )}
         </CardBody>
       </Card>
 
+      {/* 第二步：选择目标声音 */}
       <Card className="w-full max-w-2xl">
         <CardHeader className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold">第二步：说出你的槽点</h2>
+          <h2 className="text-lg font-semibold">第二步：选择目标声音</h2>
           <p className="text-sm text-default-500">
-            描述你想吐槽的事情，越详细越好
+            选择你想用谁的声音来说这段话
           </p>
         </CardHeader>
         <CardBody className="gap-4">
-          <Textarea
-            minRows={4}
-            placeholder="比如：今天老板又让我加班到凌晨，还说这是为我好..."
-            value={complaint}
-            onChange={(e) => setComplaint(e.target.value)}
-          />
-          <Button
-            color="danger"
-            isDisabled={!complaint.trim() || isGenerating}
-            isLoading={isGenerating}
-            size="lg"
-            onPress={handleGenerate}
+          <RadioGroup
+            value={targetMode}
+            onValueChange={(value) =>
+              setTargetMode(value as "preset" | "custom")
+            }
           >
-            {isGenerating ? "正在生成国粹..." : "开骂！"}
-          </Button>
+            <Radio value="preset">使用预设声音</Radio>
+            <Radio value="custom">上传自定义声音</Radio>
+          </RadioGroup>
+
+          {targetMode === "preset" && (
+            <RadioGroup
+              className="ml-6"
+              label="选择预设声音"
+              value={presetVoice}
+              onValueChange={setPresetVoice}
+            >
+              <Radio value="default">默认声音</Radio>
+              <Radio value="male1">男声 1</Radio>
+              <Radio value="male2">男声 2</Radio>
+              <Radio value="female1">女声 1</Radio>
+              <Radio value="female2">女声 2</Radio>
+            </RadioGroup>
+          )}
+
+          {targetMode === "custom" && (
+            <div className="ml-6">
+              <p className="mb-2 text-sm text-default-500">
+                录制或上传目标声音样本
+              </p>
+              <VoiceRecorder onRecorded={handleTargetRecorded} />
+              {targetAudio && (
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-sm text-success">✓ 目标声音已录制</p>
+                  <Button
+                    color="default"
+                    size="sm"
+                    variant="flat"
+                    onPress={() => setTargetAudio(null)}
+                  >
+                    重新录制
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardBody>
       </Card>
 
-      {(roastText || isGenerating) && (
+      {/* 转换按钮 */}
+      <Button
+        className="w-full max-w-2xl"
+        color="danger"
+        isDisabled={!canConvert || isConverting}
+        isLoading={isConverting}
+        size="lg"
+        onPress={handleConvert}
+      >
+        {isConverting ? "正在转换声音..." : "开始转换！"}
+      </Button>
+
+      {/* 结果展示 */}
+      {(resultAudioUrl || isConverting) && (
         <Card className="w-full max-w-2xl">
           <CardHeader>
-            <h2 className="text-lg font-semibold">吐槽结果</h2>
+            <h2 className="text-lg font-semibold">转换结果</h2>
           </CardHeader>
           <CardBody className="gap-4">
-            {isGenerating ? (
-              <div className="flex justify-center py-8">
+            {isConverting ? (
+              <div className="flex flex-col items-center justify-center py-8 gap-4">
                 <Spinner color="danger" size="lg" />
+                <p className="text-default-500">正在转换声音，请稍候...</p>
               </div>
-            ) : (
-              <>
-                <p className="whitespace-pre-wrap text-lg">{roastText}</p>
-                {audioUrl && <AudioPlayer src={audioUrl} />}
-              </>
-            )}
+            ) : resultAudioUrl ? (
+              <AudioPlayer src={resultAudioUrl} />
+            ) : null}
           </CardBody>
         </Card>
       )}
