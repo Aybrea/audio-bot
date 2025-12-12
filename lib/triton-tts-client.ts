@@ -131,6 +131,7 @@ export class TritonTTSClient {
     referenceAudio: Float32Array | null = null,
     referenceText: string | null = null,
   ): Promise<SynthesisResult> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const startTime = Date.now();
 
     // eslint-disable-next-line no-console
@@ -157,22 +158,15 @@ export class TritonTTSClient {
       }
     }
 
-    // Mock 模式 - 返回空音频
+    // Mock 模式 - 抛出错误
     // eslint-disable-next-line no-console
-    console.warn("⚠️  MOCK MODE - Not calling real TTS service!");
+    console.error("⚠️  MOCK MODE - gRPC client not initialized!");
     // eslint-disable-next-line no-console
-    console.warn(
-      "⚠️  Returning empty audio. Add proto file to use real service.",
+    console.error(
+      "⚠️  Cannot generate audio. Proto file or server connection failed.",
     );
 
-    // 模拟处理：返回3秒的静音
-    const latency = (Date.now() - startTime) / 1000;
-    const mockAudio = new Float32Array(this.config.targetSampleRate * 3);
-
-    return {
-      audio: mockAudio,
-      latency,
-    };
+    throw new Error("TTS服务未初始化。请检查proto文件和服务器连接。");
   }
 
   /**
