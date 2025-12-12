@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Radio, RadioGroup } from "@heroui/radio";
 import { Spinner } from "@heroui/spinner";
 import { Textarea } from "@heroui/input";
+import { addToast } from "@heroui/toast";
 
 import { title } from "@/components/primitives";
 import { VoiceRecorder } from "@/components/voice-recorder";
@@ -56,17 +57,30 @@ export default function Home() {
         const audioBlob = await response.blob();
 
         setResultAudioUrl(URL.createObjectURL(audioBlob));
+        addToast({
+          title: "语音生成成功！",
+          description: "请在下方播放生成的语音",
+          color: "success",
+        });
       } else {
         const error = await response.text();
 
         // eslint-disable-next-line no-console
         console.error("语音生成失败:", error);
-        alert("语音生成失败，请重试");
+        addToast({
+          title: "语音生成失败",
+          description: "请检查输入内容或稍后重试",
+          color: "danger",
+        });
       }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("请求失败:", error);
-      alert("请求失败，请检查网络连接");
+      addToast({
+        title: "请求失败",
+        description: "请检查网络连接或服务器状态",
+        color: "danger",
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -88,13 +102,15 @@ export default function Home() {
       <Card className="w-full max-w-2xl">
         <CardHeader className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold">第一步：输入要说的内容</h2>
-          <p className="text-sm text-default-500">输入你想说的文字内容</p>
+          <p className="text-sm text-default-500">
+            请输入中文文字内容（当前服务仅支持中文）
+          </p>
         </CardHeader>
         <CardBody className="gap-3">
           <Textarea
-            label="要说的内容"
+            label="要说的内容（中文）"
             minRows={4}
-            placeholder="在这里输入你想说的话..."
+            placeholder="请在这里输入中文内容，例如：大家好，今天天气真不错..."
             value={textToSpeak}
             onValueChange={setTextToSpeak}
           />
