@@ -9,10 +9,24 @@ export class StreamingAudioPlayer {
   private nextStartTime: number = 0;
   private isPlaying: boolean = false;
   private scheduledBuffers: AudioBufferSourceNode[] = [];
+  private analyser: AnalyserNode;
+  private gainNode: GainNode;
 
   constructor(sampleRate: number = 24000) {
     this.audioContext = new AudioContext({ sampleRate });
     this.sampleRate = sampleRate;
+
+    // 创建分析器节点
+    this.analyser = this.audioContext.createAnalyser();
+    this.analyser.fftSize = 2048;
+    this.analyser.smoothingTimeConstant = 0.8;
+
+    // 创建增益节点
+    this.gainNode = this.audioContext.createGain();
+
+    // 连接：gainNode -> analyser -> destination
+    this.gainNode.connect(this.analyser);
+    this.analyser.connect(this.audioContext.destination);
   }
 
   /**
@@ -38,7 +52,8 @@ export class StreamingAudioPlayer {
     const source = this.audioContext.createBufferSource();
 
     source.buffer = audioBuffer;
-    source.connect(this.audioContext.destination);
+    // 连接到 gainNode，然后通过 analyser 到 destination
+    source.connect(this.gainNode);
 
     // 计算开始时间
     const currentTime = this.audioContext.currentTime;
@@ -110,6 +125,37 @@ export class StreamingAudioPlayer {
   getIsPlaying(): boolean {
     return this.isPlaying;
   }
+
+  /**
+   * 获取分析器实例
+   */
+  getAnalyser(): AnalyserNode {
+    return this.analyser;
+  }
+
+  /**
+   * 获取频域数据（频谱）
+   */
+  getFrequencyData(): Uint8Array {
+    const bufferLength = this.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    this.analyser.getByteFrequencyData(dataArray);
+
+    return dataArray;
+  }
+
+  /**
+   * 获取时域数据（波形）
+   */
+  getTimeDomainData(): Uint8Array {
+    const bufferLength = this.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    this.analyser.getByteTimeDomainData(dataArray);
+
+    return dataArray;
+  }
 }
 
 /**
@@ -121,6 +167,10 @@ export async function playStreamingAudio(
   sampleRate: number = 24000,
   onProgress?: (bytesReceived: number) => void,
   onChunk?: (chunk: Float32Array) => void,
+  onAnalyserUpdate?: (
+    timeDomainData: Uint8Array,
+    frequencyData: Uint8Array,
+  ) => void,
 ): Promise<Float32Array> {
   if (!response.body) {
     throw new Error("Response body is null");
@@ -130,6 +180,22 @@ export async function playStreamingAudio(
   const reader = response.body.getReader();
   let buffer = new Uint8Array(0);
   const allChunks: Float32Array[] = [];
+  let animationId: number | null = null;
+
+  // 启动分析器数据更新循环
+  if (onAnalyserUpdate) {
+    const updateAnalyser = () => {
+      if (player.getIsPlaying()) {
+        const timeDomainData = player.getTimeDomainData();
+        const frequencyData = player.getFrequencyData();
+
+        onAnalyserUpdate(timeDomainData, frequencyData);
+      }
+      animationId = requestAnimationFrame(updateAnalyser);
+    };
+
+    animationId = requestAnimationFrame(updateAnalyser);
+  }
 
   try {
     while (true) {
@@ -226,6 +292,10 @@ export async function playStreamingAudio(
 
     return combined;
   } finally {
+    // 停止分析器更新循环
+    if (animationId !== null) {
+      cancelAnimationFrame(animationId);
+    }
     player.close();
   }
 }

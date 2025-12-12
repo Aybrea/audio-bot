@@ -11,7 +11,7 @@ import { addToast } from "@heroui/toast";
 import { title } from "@/components/primitives";
 import { VoiceRecorder } from "@/components/voice-recorder";
 import { WaveformPlayer } from "@/components/waveform-player";
-import { StreamingWaveform } from "@/components/streaming-waveform";
+import { LiveAudioVisualizer } from "@/components/live-audio-visualizer";
 import { playStreamingAudio } from "@/lib/streaming-audio-player";
 
 export default function Home() {
@@ -24,7 +24,10 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null);
-  const [streamingChunks, setStreamingChunks] = useState<Float32Array[]>([]);
+  const [analyserData, setAnalyserData] = useState<{
+    timeDomain: Uint8Array | null;
+    frequency: Uint8Array | null;
+  }>({ timeDomain: null, frequency: null });
 
   const handleReferenceRecorded = (blob: Blob) => {
     setReferenceAudio(blob);
@@ -86,7 +89,7 @@ export default function Home() {
     setIsGenerating(true);
     setIsStreaming(false);
     setResultAudioUrl(null);
-    setStreamingChunks([]);
+    setAnalyserData({ timeDomain: null, frequency: null });
 
     try {
       const formData = new FormData();
@@ -121,9 +124,10 @@ export default function Home() {
             // eslint-disable-next-line no-console
             console.log(`📊 Received ${bytesReceived} bytes`);
           },
-          (chunk) => {
-            // 实时更新波形数据
-            setStreamingChunks((prev) => [...prev, chunk]);
+          undefined,
+          (timeDomain, frequency) => {
+            // 实时更新分析器数据
+            setAnalyserData({ timeDomain, frequency });
           },
         );
 
@@ -267,13 +271,6 @@ export default function Home() {
       {/* 播放状态和控件 */}
       {(isGenerating || isStreaming || resultAudioUrl) && (
         <Card className="w-full max-w-2xl">
-          {(isGenerating || isStreaming) && (
-            <CardHeader>
-              <h2 className="text-lg font-semibold">
-                {isGenerating && !isStreaming ? "正在连接" : "正在播放"}
-              </h2>
-            </CardHeader>
-          )}
           <CardBody className="gap-4">
             {isGenerating && !isStreaming ? (
               <div className="flex flex-col items-center justify-center py-8 gap-4">
@@ -288,7 +285,11 @@ export default function Home() {
                 </div>
               </div>
             ) : isStreaming ? (
-              <StreamingWaveform audioData={streamingChunks} isPlaying={true} />
+              <LiveAudioVisualizer
+                frequencyData={analyserData.frequency}
+                isPlaying={true}
+                timeDomainData={analyserData.timeDomain}
+              />
             ) : resultAudioUrl ? (
               <WaveformPlayer src={resultAudioUrl} />
             ) : null}
