@@ -10,7 +10,8 @@ import { addToast } from "@heroui/toast";
 
 import { title } from "@/components/primitives";
 import { VoiceRecorder } from "@/components/voice-recorder";
-import { AudioPlayer } from "@/components/audio-player";
+import { WaveformPlayer } from "@/components/waveform-player";
+import { StreamingWaveform } from "@/components/streaming-waveform";
 import { playStreamingAudio } from "@/lib/streaming-audio-player";
 
 export default function Home() {
@@ -23,6 +24,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null);
+  const [streamingChunks, setStreamingChunks] = useState<Float32Array[]>([]);
 
   const handleReferenceRecorded = (blob: Blob) => {
     setReferenceAudio(blob);
@@ -84,6 +86,7 @@ export default function Home() {
     setIsGenerating(true);
     setIsStreaming(false);
     setResultAudioUrl(null);
+    setStreamingChunks([]);
 
     try {
       const formData = new FormData();
@@ -117,6 +120,10 @@ export default function Home() {
           (bytesReceived) => {
             // eslint-disable-next-line no-console
             console.log(`📊 Received ${bytesReceived} bytes`);
+          },
+          (chunk) => {
+            // 实时更新波形数据
+            setStreamingChunks((prev) => [...prev, chunk]);
           },
         );
 
@@ -281,22 +288,9 @@ export default function Home() {
                 </div>
               </div>
             ) : isStreaming ? (
-              <div className="flex flex-col items-center justify-center py-8 gap-4">
-                <Spinner color="danger" size="lg" />
-                <div className="flex flex-col items-center gap-2">
-                  <p className="text-default-500 font-medium">
-                    正在实时播放语音...
-                  </p>
-                  <p className="text-xs text-default-400">
-                    🎵 AI正在用默认声音朗读您的文本
-                  </p>
-                  <p className="text-xs text-default-400">
-                    🔊 音频边生成边播放，无需等待
-                  </p>
-                </div>
-              </div>
+              <StreamingWaveform audioData={streamingChunks} isPlaying={true} />
             ) : resultAudioUrl ? (
-              <AudioPlayer src={resultAudioUrl} />
+              <WaveformPlayer src={resultAudioUrl} />
             ) : null}
           </CardBody>
         </Card>

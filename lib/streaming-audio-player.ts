@@ -120,6 +120,7 @@ export async function playStreamingAudio(
   response: Response,
   sampleRate: number = 24000,
   onProgress?: (bytesReceived: number) => void,
+  onChunk?: (chunk: Float32Array) => void,
 ): Promise<Float32Array> {
   if (!response.body) {
     throw new Error("Response body is null");
@@ -174,6 +175,11 @@ export async function playStreamingAudio(
 
         // 收集这个块用于后续生成完整文件
         allChunks.push(floatArray);
+
+        // 通知新的音频块（用于实时波形显示）
+        if (onChunk) {
+          onChunk(floatArray);
+        }
 
         // 从缓冲区中移除已处理的数据
         buffer = buffer.slice(alignedLength);
