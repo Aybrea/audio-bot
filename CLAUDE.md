@@ -13,18 +13,24 @@ bun run start    # Start production server
 
 ## Architecture
 
-This is a "嘴替机器人" (Voice Conversion Bot) - a Next.js 15 app that lets users record their voice rant and convert it to a different voice using AI voice conversion.
+This is a "嘴替机器人" (TTS Voice Clone Bot) - a Next.js 15 app that uses TTS (Text-to-Speech) technology to generate speech in your voice.
+
+### Model Capability
+
+The underlying model is a TTS system that:
+- **Input**: Text content + your audio sample + your audio's transcription text
+- **Output**: Speech generated in your voice
 
 ### Project Structure
 
 - `app/` - Next.js App Router pages and layouts
-  - `app/api/voice-convert/` - API endpoint for voice conversion
+  - `app/api/voice-convert/` - API endpoint for TTS voice generation
 - `components/` - Reusable React components
-  - `voice-recorder.tsx` - Records user's voice using Web Audio API
+  - `voice-recorder.tsx` - Records user's voice sample using Web Audio API
   - `audio-player.tsx` - Custom audio player with progress bar
   - `navbar.tsx`, `theme-switch.tsx`, `icons.tsx` - UI components
 - `lib/` - Utility libraries
-  - `triton-vc-client.ts` - gRPC client for Triton voice conversion service
+  - `triton-vc-client.ts` - gRPC client for Triton TTS service
   - `audio-utils.ts` - Audio processing utilities (WAV parsing, resampling)
 - `config/` - Site configuration (`site.ts` for nav items/links, `fonts.ts` for fonts)
 - `styles/` - Global CSS
@@ -32,9 +38,9 @@ This is a "嘴替机器人" (Voice Conversion Bot) - a Next.js 15 app that lets 
 
 ### Key Features
 
-1. **Voice Recording**: Uses browser MediaRecorder API to capture user's rant
-2. **Voice Conversion**: API route at `/api/voice-convert` converts voice using Triton gRPC service
-3. **Target Voice Selection**: Users can choose preset voices or upload custom voice sample
+1. **Voice Recording**: Uses browser MediaRecorder API to capture user's voice sample
+2. **TTS Generation**: API route at `/api/voice-convert` generates speech from text using Triton gRPC service
+3. **Voice Sample Upload**: Users can upload their voice sample with transcription for voice cloning
 4. **Audio Playback**: Custom player component with play/pause and progress tracking
 
 ### Integration Points

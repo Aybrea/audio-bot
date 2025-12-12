@@ -83,7 +83,7 @@ bun run dev
 ### 环境变量 (.env.local)
 ```bash
 TTS_SERVER_ADDRESS=speechlab-tunnel.southeastasia.cloudapp.azure.com
-TTS_SERVER_PORT=8001
+TTS_SERVER_PORT=8000
 TTS_MODEL_NAME=cosyvoice2  # 或 f5_tts, spark_tts
 TTS_SAMPLE_RATE=24000      # cosyvoice2用24000，其他用16000
 ```

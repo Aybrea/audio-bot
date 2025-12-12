@@ -89,7 +89,7 @@ cp .env.example .env.local
 ```bash
 # Triton TTS 配置（已集成）
 TTS_SERVER_ADDRESS=speechlab-tunnel.southeastasia.cloudapp.azure.com
-TTS_SERVER_PORT=8001
+TTS_SERVER_PORT=8000
 TTS_MODEL_NAME=cosyvoice2
 TTS_SAMPLE_RATE=24000
 
@@ -172,7 +172,7 @@ import { TritonTTSClient } from "@/lib/triton-tts-client";
 
 const client = new TritonTTSClient({
   serverAddress: "your-server.com",
-  serverPort: 8001,
+  serverPort: 8000,
   modelName: "cosyvoice2",
   targetSampleRate: 24000,
 });

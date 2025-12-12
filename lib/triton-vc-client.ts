@@ -33,7 +33,7 @@ export class TritonVCClient {
       serverAddress:
         config.serverAddress ||
         "speechlab-tunnel.southeastasia.cloudapp.azure.com",
-      serverPort: config.serverPort || 8001,
+      serverPort: config.serverPort || 8000,
       modelName: config.modelName || "cosyvoice2",
       targetSampleRate: config.targetSampleRate || 24000,
     };
