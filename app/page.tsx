@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Radio, RadioGroup } from "@heroui/radio";
 import { Spinner } from "@heroui/spinner";
 import { Textarea } from "@heroui/input";
 import { addToast } from "@heroui/toast";
@@ -12,14 +11,28 @@ import { title } from "@/components/primitives";
 import { VoiceRecorder } from "@/components/voice-recorder";
 import { WaveformPlayer } from "@/components/waveform-player";
 import { LiveAudioVisualizer } from "@/components/live-audio-visualizer";
-import { SampleFileList } from "@/components/sample-file-list";
 import { playStreamingAudio } from "@/lib/streaming-audio-player";
+
+interface SampleFile {
+  name: string;
+  path: string;
+  displayName: string;
+  referenceText: string;
+  description: string;
+}
+
+type VoiceMode =
+  | { type: "default" }
+  | { type: "sample"; file: SampleFile }
+  | { type: "record" };
 
 export default function Home() {
   const [textToSpeak, setTextToSpeak] = useState(
     "阳光透过稠密的枝叶洒落下来，那一片宁静的森林仿佛被金色丝线所包围。清风拂过，满眼绿意化作层层涟漪，在心头荡漾。",
   );
-  const [voiceMode, setVoiceMode] = useState<"default" | "custom">("default");
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>({ type: "default" });
+  const [sampleFiles, setSampleFiles] = useState<SampleFile[]>([]);
+  const [loadingSamples, setLoadingSamples] = useState(true);
   const [referenceAudio, setReferenceAudio] = useState<Blob | null>(null);
   const [referenceText, setReferenceText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -29,25 +42,85 @@ export default function Home() {
     timeDomain: Uint8Array | null;
     frequency: Uint8Array | null;
   }>({ timeDomain: null, frequency: null });
+  const [playingSample, setPlayingSample] = useState<string | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
+    null,
+  );
+
+  // 获取样本文件列表
+  useEffect(() => {
+    fetch("/api/samples")
+      .then((res) => res.json())
+      .then((data) => {
+        setSampleFiles(data);
+        setLoadingSamples(false);
+      })
+      .catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error("Failed to load samples:", error);
+        setLoadingSamples(false);
+      });
+  }, []);
+
+  // 初始化音频元素
+  useEffect(() => {
+    const audio = new Audio();
+
+    audio.addEventListener("ended", () => {
+      setPlayingSample(null);
+    });
+
+    setAudioElement(audio);
+
+    return () => {
+      audio.pause();
+      audio.src = "";
+    };
+  }, []);
 
   const handleReferenceRecorded = (blob: Blob) => {
     setReferenceAudio(blob);
   };
 
-  const handleSampleSelected = async (file: {
-    name: string;
-    path: string;
-    displayName: string;
-    referenceText: string;
-  }) => {
+  // 处理播放样本
+  const handlePlaySample = (
+    file: SampleFile,
+    event: React.MouseEvent | React.TouchEvent,
+  ) => {
+    // 阻止事件冒泡和默认行为，避免触发卡片的选择
+    event.stopPropagation();
+    event.preventDefault();
+
+    if (!audioElement) return;
+
+    if (playingSample === file.path) {
+      // 如果正在播放这个文件，则暂停
+      audioElement.pause();
+      setPlayingSample(null);
+    } else {
+      // 播放新文件
+      audioElement.src = file.path;
+      audioElement.play();
+      setPlayingSample(file.path);
+    }
+  };
+
+  // 处理选择默认声音
+  const handleSelectDefault = () => {
+    setVoiceMode({ type: "default" });
+    setReferenceAudio(null);
+    setReferenceText("");
+  };
+
+  // 处理选择样本文件
+  const handleSelectSample = async (file: SampleFile) => {
     try {
       // 从 URL 获取文件
       const response = await fetch(file.path);
       const blob = await response.blob();
 
+      setVoiceMode({ type: "sample", file });
       setReferenceAudio(blob);
-
-      // 使用样本文件的参考文本
       setReferenceText(file.referenceText);
 
       addToast({
@@ -64,6 +137,13 @@ export default function Home() {
         color: "danger",
       });
     }
+  };
+
+  // 处理选择自行录音
+  const handleSelectRecord = () => {
+    setVoiceMode({ type: "record" });
+    setReferenceAudio(null);
+    setReferenceText("");
   };
 
   // 将 Float32Array 转换为 WAV Blob
@@ -114,8 +194,16 @@ export default function Home() {
   const handleGenerate = async () => {
     if (!textToSpeak.trim()) return;
 
-    // 如果选择自定义声音，必须提供音频和转录文本
-    if (voiceMode === "custom" && (!referenceAudio || !referenceText.trim())) {
+    // 如果选择样本音源，必须提供音频
+    if (voiceMode.type === "sample" && !referenceAudio) {
+      return;
+    }
+
+    // 如果选择自行录音，必须提供音频和转录文本
+    if (
+      voiceMode.type === "record" &&
+      (!referenceAudio || !referenceText.trim())
+    ) {
       return;
     }
 
@@ -129,8 +217,12 @@ export default function Home() {
 
       formData.append("text", textToSpeak);
 
-      // 只有选择自定义声音时才添加参考音频和文本
-      if (voiceMode === "custom" && referenceAudio && referenceText.trim()) {
+      // 样本音源或自行录音模式时添加参考音频和文本
+      if (
+        (voiceMode.type === "sample" || voiceMode.type === "record") &&
+        referenceAudio &&
+        referenceText.trim()
+      ) {
         formData.append("referenceAudio", referenceAudio);
         formData.append("referenceText", referenceText);
       }
@@ -203,8 +295,11 @@ export default function Home() {
 
   const canGenerate =
     textToSpeak.trim() !== "" &&
-    (voiceMode === "default" ||
-      (referenceAudio !== null && referenceText.trim() !== ""));
+    (voiceMode.type === "default" ||
+      (voiceMode.type === "sample" && referenceAudio !== null) ||
+      (voiceMode.type === "record" &&
+        referenceAudio !== null &&
+        referenceText.trim() !== ""));
 
   return (
     <section className="flex flex-col items-center justify-center gap-6 py-8 md:py-10">
@@ -216,7 +311,7 @@ export default function Home() {
       {/* 第一步：输入要说的文字 */}
       <Card className="w-full max-w-2xl">
         <CardHeader className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold">第一步：输入要说的内容</h2>
+          <h2 className="text-lg font-semibold">第一步：输入内容</h2>
           <p className="text-sm text-default-500">
             请输入中文文字内容（当前服务仅支持中文）
           </p>
@@ -232,42 +327,160 @@ export default function Home() {
         </CardBody>
       </Card>
 
-      {/* 第二步：选择声音模式（可选） */}
+      {/* 第二步：选择声音模式 */}
       <Card className="w-full max-w-2xl">
         <CardHeader className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold">第二步：选择声音（可选）</h2>
-          <p className="text-sm text-default-500">
-            使用默认声音或上传自定义声音样本
-          </p>
+          <h2 className="text-lg font-semibold">第二步：选择声音</h2>
         </CardHeader>
         <CardBody className="gap-4">
-          <RadioGroup
-            value={voiceMode}
-            onValueChange={(value) =>
-              setVoiceMode(value as "default" | "custom")
-            }
-          >
-            <Radio value="default">使用默认声音</Radio>
-            <Radio value="custom">使用自定义声音</Radio>
-          </RadioGroup>
+          {loadingSamples ? (
+            <div className="flex items-center justify-center py-8">
+              <Spinner color="danger" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* 默认声音卡片 */}
+              <Card
+                className={`cursor-pointer transition-all ${
+                  voiceMode.type === "default"
+                    ? "border-2 border-danger bg-danger-50"
+                    : "border-2 border-transparent hover:border-default-300"
+                }`}
+              >
+                <CardBody className="gap-2" onClick={handleSelectDefault}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        voiceMode.type === "default"
+                          ? "border-danger bg-danger"
+                          : "border-default-300"
+                      }`}
+                    >
+                      {voiceMode.type === "default" && (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <h3 className="text-base font-semibold">默认声音</h3>
+                  </div>
+                  <p className="text-sm text-default-500">
+                    使用系统预设的默认声音
+                  </p>
+                </CardBody>
+              </Card>
 
-          {voiceMode === "custom" && (
-            <div className="ml-6 flex flex-col gap-4">
+              {/* 样本文件卡片 */}
+              {sampleFiles.map((file) => (
+                <Card
+                  key={file.path}
+                  className={`cursor-pointer transition-all ${
+                    voiceMode.type === "sample" &&
+                    voiceMode.file.path === file.path
+                      ? "border-2 border-danger bg-danger-50"
+                      : "border-2 border-transparent hover:border-default-300"
+                  }`}
+                >
+                  <CardBody
+                    className="gap-2"
+                    onClick={() => handleSelectSample(file)}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            voiceMode.type === "sample" &&
+                            voiceMode.file.path === file.path
+                              ? "border-danger bg-danger"
+                              : "border-default-300"
+                          }`}
+                        >
+                          {voiceMode.type === "sample" &&
+                            voiceMode.file.path === file.path && (
+                              <div className="w-2 h-2 rounded-full bg-white" />
+                            )}
+                        </div>
+                        <h3 className="text-base font-semibold">
+                          {file.displayName}
+                        </h3>
+                      </div>
+                      <button
+                        className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                          playingSample === file.path
+                            ? "bg-danger text-white hover:bg-danger-600"
+                            : "bg-default-100 text-default-600 hover:bg-default-200"
+                        }`}
+                        type="button"
+                        onClick={(e) => handlePlaySample(file, e)}
+                      >
+                        {playingSample === file.path ? (
+                          <svg
+                            className="w-4 h-4"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-4 h-4"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {file.description && (
+                      <p className="text-sm text-default-500">
+                        {file.description}
+                      </p>
+                    )}
+                  </CardBody>
+                </Card>
+              ))}
+
+              {/* 自行录音卡片 */}
+              <Card
+                className={`cursor-pointer transition-all ${
+                  voiceMode.type === "record"
+                    ? "border-2 border-danger bg-danger-50"
+                    : "border-2 border-transparent hover:border-default-300"
+                }`}
+              >
+                <CardBody className="gap-2" onClick={handleSelectRecord}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        voiceMode.type === "record"
+                          ? "border-danger bg-danger"
+                          : "border-default-300"
+                      }`}
+                    >
+                      {voiceMode.type === "record" && (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <h3 className="text-base font-semibold">自行录音</h3>
+                  </div>
+                  <p className="text-sm text-default-500">
+                    录制你自己的声音样本
+                  </p>
+                </CardBody>
+              </Card>
+            </div>
+          )}
+
+          {/* 自行录音模式的额外输入 */}
+          {voiceMode.type === "record" && (
+            <div className="flex flex-col gap-4 mt-2">
               <div>
                 <p className="mb-2 text-sm text-default-500">
-                  选择样本文件或录制你的声音
-                </p>
-                <SampleFileList onSelect={handleSampleSelected} />
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm text-default-500">
-                  或录制你的声音样本
+                  录制你的声音样本
                 </p>
                 <VoiceRecorder onRecorded={handleReferenceRecorded} />
                 {referenceAudio && (
                   <div className="mt-2 flex items-center gap-2">
-                    <p className="text-sm text-success">✓ 声音样本已选择</p>
+                    <p className="text-sm text-success">✓ 声音已录制</p>
                     <Button
                       color="default"
                       size="sm"
