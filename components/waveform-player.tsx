@@ -7,9 +7,14 @@ import { Button } from "@heroui/button";
 interface WaveformPlayerProps {
   src: string;
   autoPlay?: boolean;
+  onDownload?: () => void;
 }
 
-export function WaveformPlayer({ src, autoPlay = false }: WaveformPlayerProps) {
+export function WaveformPlayer({
+  src,
+  autoPlay = false,
+  onDownload,
+}: WaveformPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -94,6 +99,21 @@ export function WaveformPlayer({ src, autoPlay = false }: WaveformPlayerProps) {
         <span className="text-sm text-default-500 min-w-[80px]">
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
+        <div className="flex-1" />
+        {onDownload && (
+          <Button
+            isIconOnly
+            color="primary"
+            radius="full"
+            size="lg"
+            variant="flat"
+            onPress={onDownload}
+          >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+            </svg>
+          </Button>
+        )}
       </div>
       <div ref={containerRef} className="w-full" />
     </div>

@@ -140,12 +140,6 @@ export default function Home() {
       setVoiceMode({ type: "sample", file });
       setReferenceAudio(blob);
       setReferenceText(file.referenceText);
-
-      addToast({
-        title: "样本已选择",
-        description: `已选择样本：${file.displayName}`,
-        color: "success",
-      });
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Failed to load sample file:", error);
@@ -282,8 +276,8 @@ export default function Home() {
         setIsStreaming(false);
 
         addToast({
-          title: "播放完成",
-          description: "可以使用下方控件重新播放",
+          title: "转换完成",
+          description: "语音生成完毕",
           color: "success",
         });
       } else {
@@ -319,11 +313,24 @@ export default function Home() {
         referenceAudio !== null &&
         referenceText.trim() !== ""));
 
+  // 下载生成的音频
+  const handleDownload = () => {
+    if (!resultAudioUrl) return;
+
+    const a = document.createElement("a");
+
+    a.href = resultAudioUrl;
+    a.download = `voice-${Date.now()}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   return (
     <section className="flex flex-col items-center justify-center gap-6 py-8 md:py-10">
       <div className="inline-block max-w-xl text-center justify-center">
         <h1 className={title()}>嘴替机器人</h1>
-        <p className="mt-4 text-default-600">输入文字，转换为语音</p>
+        <p className="mt-4 text-default-600">输入文字，转换语音</p>
       </div>
 
       {/* 第一步：输入要说的文字 */}
@@ -575,7 +582,10 @@ export default function Home() {
                 timeDomainData={analyserData.timeDomain}
               />
             ) : resultAudioUrl ? (
-              <WaveformPlayer src={resultAudioUrl} />
+              <WaveformPlayer
+                src={resultAudioUrl}
+                onDownload={handleDownload}
+              />
             ) : null}
           </CardBody>
         </Card>
