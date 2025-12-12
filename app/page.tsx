@@ -46,6 +46,9 @@ export default function Home() {
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
     null,
   );
+  const [referenceAudioUrl, setReferenceAudioUrl] = useState<string | null>(
+    null,
+  );
 
   // 获取样本文件列表
   useEffect(() => {
@@ -77,6 +80,21 @@ export default function Home() {
       audio.src = "";
     };
   }, []);
+
+  // 管理录音 URL
+  useEffect(() => {
+    if (referenceAudio) {
+      const url = URL.createObjectURL(referenceAudio);
+
+      setReferenceAudioUrl(url);
+
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setReferenceAudioUrl(null);
+    }
+  }, [referenceAudio]);
 
   const handleReferenceRecorded = (blob: Blob) => {
     setReferenceAudio(blob);
@@ -477,30 +495,42 @@ export default function Home() {
                 <p className="mb-2 text-sm text-default-500">
                   录制你的声音样本
                 </p>
+                <div className="mb-3 flex flex-col gap-1">
+                  <p className="text-xs text-default-400">
+                    ⏱️ 建议录制 3-5 秒的音频以获得最佳效果
+                  </p>
+                  <p className="text-xs text-default-400">
+                    💡 您的录音将用于生成语音，处理完成后不会被永久保存
+                  </p>
+                </div>
                 <VoiceRecorder onRecorded={handleReferenceRecorded} />
-                {referenceAudio && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <p className="text-sm text-success">✓ 声音已录制</p>
-                    <Button
-                      color="default"
-                      size="sm"
-                      variant="flat"
-                      onPress={() => {
-                        setReferenceAudio(null);
-                        setReferenceText("");
-                      }}
-                    >
-                      清除
-                    </Button>
+                {referenceAudio && referenceAudioUrl && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-success">✓ 声音已录制</p>
+                      <Button
+                        color="default"
+                        size="sm"
+                        variant="flat"
+                        onPress={() => {
+                          setReferenceAudio(null);
+                          setReferenceText("");
+                        }}
+                      >
+                        清除
+                      </Button>
+                    </div>
+                    <WaveformPlayer src={referenceAudioUrl} />
                   </div>
                 )}
               </div>
 
               <div>
                 <Textarea
+                  description="⚠️ 录音时请朗读此处填写的文本内容，确保录音与文本完全一致"
                   label="声音样本的文字内容"
                   minRows={3}
-                  placeholder="输入你在声音样本中说的话..."
+                  placeholder="大家好，今天天气真不错，心情也很愉快。"
                   value={referenceText}
                   onValueChange={setReferenceText}
                 />

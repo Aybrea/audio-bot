@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 
@@ -11,10 +11,28 @@ interface VoiceRecorderProps {
 export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  };
+
+  // 限制录音时长最长10秒
+  useEffect(() => {
+    if (isRecording && recordingTime >= 10) {
+      stopRecording();
+    }
+  }, [isRecording, recordingTime]);
 
   const startRecording = async () => {
     try {
@@ -32,9 +50,7 @@ export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const url = URL.createObjectURL(blob);
 
-        setAudioUrl(url);
         onRecorded(blob);
 
         stream.getTracks().forEach((track) => track.stop());
@@ -51,18 +67,6 @@ export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
       // eslint-disable-next-line no-console
       console.error("无法访问麦克风:", error);
       alert("无法访问麦克风，请检查权限设置");
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
     }
   };
 
@@ -100,14 +104,6 @@ export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
           color="danger"
           size="sm"
         />
-      )}
-
-      {audioUrl && !isRecording && (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-default-500">录音预览:</p>
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <audio controls className="w-full max-w-md" src={audioUrl} />
-        </div>
       )}
     </div>
   );
