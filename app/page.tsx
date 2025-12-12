@@ -386,6 +386,35 @@ export default function Home() {
                 </CardBody>
               </Card>
 
+              {/* 自行录音卡片 */}
+              <Card
+                className={`cursor-pointer transition-all ${
+                  voiceMode.type === "record"
+                    ? "border-2 border-danger bg-danger-50"
+                    : "border-2 border-transparent hover:border-default-300"
+                }`}
+              >
+                <CardBody className="gap-2" onClick={handleSelectRecord}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        voiceMode.type === "record"
+                          ? "border-danger bg-danger"
+                          : "border-default-300"
+                      }`}
+                    >
+                      {voiceMode.type === "record" && (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <h3 className="text-base font-semibold">自行录音</h3>
+                  </div>
+                  <p className="text-sm text-default-500">
+                    录制你自己的声音样本
+                  </p>
+                </CardBody>
+              </Card>
+
               {/* 样本文件卡片 */}
               {sampleFiles.map((file) => (
                 <Card
@@ -456,35 +485,6 @@ export default function Home() {
                   </CardBody>
                 </Card>
               ))}
-
-              {/* 自行录音卡片 */}
-              <Card
-                className={`cursor-pointer transition-all ${
-                  voiceMode.type === "record"
-                    ? "border-2 border-danger bg-danger-50"
-                    : "border-2 border-transparent hover:border-default-300"
-                }`}
-              >
-                <CardBody className="gap-2" onClick={handleSelectRecord}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        voiceMode.type === "record"
-                          ? "border-danger bg-danger"
-                          : "border-default-300"
-                      }`}
-                    >
-                      {voiceMode.type === "record" && (
-                        <div className="w-2 h-2 rounded-full bg-white" />
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold">自行录音</h3>
-                  </div>
-                  <p className="text-sm text-default-500">
-                    录制你自己的声音样本
-                  </p>
-                </CardBody>
-              </Card>
             </div>
           )}
 
