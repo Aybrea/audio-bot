@@ -133,7 +133,9 @@ export default function Home() {
             }
           >
             <Radio value="default">使用默认声音</Radio>
-            <Radio value="custom">使用自定义声音</Radio>
+            <Radio isDisabled value="custom">
+              使用自定义声音（暂不可用）
+            </Radio>
           </RadioGroup>
 
           {voiceMode === "custom" && (
