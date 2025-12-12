@@ -129,7 +129,8 @@ export function createWavBuffer(
   buffer.writeUInt32LE(dataSize, 40);
 
   // Copy PCM data
-  pcmData.copy(buffer, 44);
+  // 使用set方法代替copy，避免TypeScript类型问题
+  buffer.set(pcmData, 44);
 
   return buffer;
 }
