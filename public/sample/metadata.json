@@ -1,0 +1,12 @@
+{
+  "hutao.wav": {
+    "name": "胡桃语音样本",
+    "referenceText": "嗯~早起身体好，晚睡人会飘。",
+    "description": "原神角色胡桃的语音样本"
+  },
+  "keli.wav": {
+    "name": "可莉语音样本",
+    "referenceText": "风神保佑，把可莉的炸弹往合适的地方吹吧。",
+    "description": "原神角色可莉的语音样本"
+  }
+}

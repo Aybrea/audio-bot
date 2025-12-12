@@ -12,6 +12,7 @@ import { title } from "@/components/primitives";
 import { VoiceRecorder } from "@/components/voice-recorder";
 import { WaveformPlayer } from "@/components/waveform-player";
 import { LiveAudioVisualizer } from "@/components/live-audio-visualizer";
+import { SampleFileList } from "@/components/sample-file-list";
 import { playStreamingAudio } from "@/lib/streaming-audio-player";
 
 export default function Home() {
@@ -31,6 +32,38 @@ export default function Home() {
 
   const handleReferenceRecorded = (blob: Blob) => {
     setReferenceAudio(blob);
+  };
+
+  const handleSampleSelected = async (file: {
+    name: string;
+    path: string;
+    displayName: string;
+    referenceText: string;
+  }) => {
+    try {
+      // 从 URL 获取文件
+      const response = await fetch(file.path);
+      const blob = await response.blob();
+
+      setReferenceAudio(blob);
+
+      // 使用样本文件的参考文本
+      setReferenceText(file.referenceText);
+
+      addToast({
+        title: "样本已选择",
+        description: `已选择样本：${file.displayName}`,
+        color: "success",
+      });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to load sample file:", error);
+      addToast({
+        title: "加载失败",
+        description: "无法加载样本文件",
+        color: "danger",
+      });
+    }
   };
 
   // 将 Float32Array 转换为 WAV Blob
@@ -215,28 +248,36 @@ export default function Home() {
             }
           >
             <Radio value="default">使用默认声音</Radio>
-            <Radio isDisabled value="custom">
-              使用自定义声音（暂不可用）
-            </Radio>
+            <Radio value="custom">使用自定义声音</Radio>
           </RadioGroup>
 
           {voiceMode === "custom" && (
             <div className="ml-6 flex flex-col gap-4">
               <div>
                 <p className="mb-2 text-sm text-default-500">
-                  录制你的声音样本
+                  选择样本文件或录制你的声音
+                </p>
+                <SampleFileList onSelect={handleSampleSelected} />
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm text-default-500">
+                  或录制你的声音样本
                 </p>
                 <VoiceRecorder onRecorded={handleReferenceRecorded} />
                 {referenceAudio && (
                   <div className="mt-2 flex items-center gap-2">
-                    <p className="text-sm text-success">✓ 声音样本已录制</p>
+                    <p className="text-sm text-success">✓ 声音样本已选择</p>
                     <Button
                       color="default"
                       size="sm"
                       variant="flat"
-                      onPress={() => setReferenceAudio(null)}
+                      onPress={() => {
+                        setReferenceAudio(null);
+                        setReferenceText("");
+                      }}
                     >
-                      重新录制
+                      清除
                     </Button>
                   </div>
                 )}
