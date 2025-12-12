@@ -11,6 +11,7 @@ import { addToast } from "@heroui/toast";
 import { title } from "@/components/primitives";
 import { VoiceRecorder } from "@/components/voice-recorder";
 import { AudioPlayer } from "@/components/audio-player";
+import { playStreamingAudio } from "@/lib/streaming-audio-player";
 
 export default function Home() {
   const [textToSpeak, setTextToSpeak] = useState(
@@ -19,11 +20,57 @@ export default function Home() {
   const [voiceMode, setVoiceMode] = useState<"default" | "custom">("default");
   const [referenceAudio, setReferenceAudio] = useState<Blob | null>(null);
   const [referenceText, setReferenceText] = useState("");
-  const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null);
 
   const handleReferenceRecorded = (blob: Blob) => {
     setReferenceAudio(blob);
+  };
+
+  // 将 Float32Array 转换为 WAV Blob
+  const createWavBlob = (samples: Float32Array, sampleRate: number): Blob => {
+    const numChannels = 1;
+    const bytesPerSample = 2;
+    const blockAlign = numChannels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = samples.length * bytesPerSample;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    // WAV 文件头
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+
+    writeString(0, "RIFF");
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, "WAVE");
+    writeString(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, 16, true);
+    writeString(36, "data");
+    view.setUint32(40, dataSize, true);
+
+    // 写入音频数据
+    let offset = 44;
+
+    for (let i = 0; i < samples.length; i++) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      const val = s < 0 ? s * 0x8000 : s * 0x7fff;
+
+      view.setInt16(offset, val, true);
+      offset += 2;
+    }
+
+    return new Blob([buffer], { type: "audio/wav" });
   };
 
   const handleGenerate = async () => {
@@ -35,6 +82,7 @@ export default function Home() {
     }
 
     setIsGenerating(true);
+    setIsStreaming(false);
     setResultAudioUrl(null);
 
     try {
@@ -54,12 +102,34 @@ export default function Home() {
       });
 
       if (response.ok) {
-        const audioBlob = await response.blob();
-
-        setResultAudioUrl(URL.createObjectURL(audioBlob));
+        // 开始流式播放
+        setIsStreaming(true);
         addToast({
-          title: "语音生成成功！",
-          description: "请在下方播放生成的语音",
+          title: "开始播放语音",
+          description: "正在实时生成并播放语音",
+          color: "success",
+        });
+
+        // 流式播放音频并获取完整数据
+        const audioData = await playStreamingAudio(
+          response,
+          24000,
+          (bytesReceived) => {
+            // eslint-disable-next-line no-console
+            console.log(`📊 Received ${bytesReceived} bytes`);
+          },
+        );
+
+        // 生成完整的 WAV 文件
+        const wavBlob = createWavBlob(audioData, 24000);
+        const audioUrl = URL.createObjectURL(wavBlob);
+
+        setResultAudioUrl(audioUrl);
+        setIsStreaming(false);
+
+        addToast({
+          title: "播放完成",
+          description: "可以使用下方控件重新播放",
           color: "success",
         });
       } else {
@@ -83,6 +153,7 @@ export default function Home() {
       });
     } finally {
       setIsGenerating(false);
+      setIsStreaming(false);
     }
   };
 
@@ -183,20 +254,46 @@ export default function Home() {
         size="lg"
         onPress={handleGenerate}
       >
-        {isGenerating ? "正在生成语音..." : "生成语音！"}
+        {isGenerating ? "正在转换" : resultAudioUrl ? "重新转换" : "转换语音"}
       </Button>
 
-      {/* 结果展示 */}
-      {(resultAudioUrl || isGenerating) && (
+      {/* 播放状态和控件 */}
+      {(isGenerating || isStreaming || resultAudioUrl) && (
         <Card className="w-full max-w-2xl">
-          <CardHeader>
-            <h2 className="text-lg font-semibold">生成结果</h2>
-          </CardHeader>
+          {(isGenerating || isStreaming) && (
+            <CardHeader>
+              <h2 className="text-lg font-semibold">
+                {isGenerating && !isStreaming ? "正在连接" : "正在播放"}
+              </h2>
+            </CardHeader>
+          )}
           <CardBody className="gap-4">
-            {isGenerating ? (
+            {isGenerating && !isStreaming ? (
               <div className="flex flex-col items-center justify-center py-8 gap-4">
                 <Spinner color="danger" size="lg" />
-                <p className="text-default-500">正在生成语音，请稍候...</p>
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-default-500 font-medium">
+                    正在连接服务器...
+                  </p>
+                  <p className="text-xs text-default-400">
+                    ⏳ 准备开始生成语音
+                  </p>
+                </div>
+              </div>
+            ) : isStreaming ? (
+              <div className="flex flex-col items-center justify-center py-8 gap-4">
+                <Spinner color="danger" size="lg" />
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-default-500 font-medium">
+                    正在实时播放语音...
+                  </p>
+                  <p className="text-xs text-default-400">
+                    🎵 AI正在用默认声音朗读您的文本
+                  </p>
+                  <p className="text-xs text-default-400">
+                    🔊 音频边生成边播放，无需等待
+                  </p>
+                </div>
               </div>
             ) : resultAudioUrl ? (
               <AudioPlayer src={resultAudioUrl} />

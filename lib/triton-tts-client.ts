@@ -120,7 +120,207 @@ export class TritonTTSClient {
   }
 
   /**
-   * TTS语音合成
+   * TTS语音合成（流式）- 实时返回音频块
+   *
+   * @param text 要说的文本
+   * @param referenceAudio 声音样本（可选，用于克隆声音）
+   * @param referenceText 声音样本的转录文本（可选）
+   */
+  async *synthesizeStream(
+    text: string,
+    referenceAudio: Float32Array | null = null,
+    referenceText: string | null = null,
+  ): AsyncGenerator<Float32Array, void, unknown> {
+    if (!this.grpcClient) {
+      throw new Error("TTS服务未初始化。请检查proto文件和服务器连接。");
+    }
+
+    // eslint-disable-next-line no-console
+    console.log("🎵 Starting streaming TTS synthesis:", {
+      text: text.substring(0, 50) + (text.length > 50 ? "..." : ""),
+      hasReferenceAudio: !!referenceAudio,
+      referenceText: referenceText
+        ? referenceText.substring(0, 50) +
+          (referenceText.length > 50 ? "..." : "")
+        : "none",
+      model: this.config.modelName,
+    });
+
+    const requestId = `tts-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // 构建输入
+    const inputs: any[] = [
+      {
+        name: "target_text",
+        datatype: "BYTES",
+        shape: [1, 1],
+        contents: {
+          bytes_contents: [Buffer.from(text, "utf-8")],
+        },
+      },
+    ];
+
+    // 如果提供了参考音频和文本，添加到输入
+    if (referenceAudio && referenceText) {
+      inputs.push({
+        name: "reference_wav",
+        datatype: "FP32",
+        shape: [1, referenceAudio.length],
+        contents: {
+          fp32_contents: Array.from(referenceAudio),
+        },
+      });
+      inputs.push({
+        name: "reference_wav_len",
+        datatype: "INT32",
+        shape: [1, 1],
+        contents: {
+          int_contents: [referenceAudio.length],
+        },
+      });
+      inputs.push({
+        name: "reference_text",
+        datatype: "BYTES",
+        shape: [1, 1],
+        contents: {
+          bytes_contents: [Buffer.from(referenceText, "utf-8")],
+        },
+      });
+    }
+
+    const request = {
+      model_name: this.config.modelName,
+      model_version: "",
+      id: requestId,
+      inputs,
+      outputs: [{ name: "waveform" }],
+    };
+
+    const call = this.grpcClient.ModelStreamInfer();
+
+    // 创建一个 Promise 来处理流的结束和错误
+    const streamPromise = new Promise<void>((resolve, reject) => {
+      call.on("end", () => {
+        // eslint-disable-next-line no-console
+        console.log("✅ Stream ended");
+        resolve();
+      });
+
+      call.on("error", (error: any) => {
+        // eslint-disable-next-line no-console
+        console.error("❌ Stream error:", error);
+        reject(error);
+      });
+    });
+
+    // 发送请求
+    call.write(request);
+    call.end();
+
+    // 使用异步迭代器处理数据流
+    try {
+      for await (const response of this.createAsyncIterator(call)) {
+        const isFinal =
+          response.infer_response?.parameters?.triton_final_response
+            ?.bool_param;
+
+        if (isFinal) {
+          // eslint-disable-next-line no-console
+          console.log("🏁 Received final response marker");
+          break;
+        }
+
+        const outputs = response.infer_response?.outputs;
+
+        if (outputs) {
+          for (const output of outputs) {
+            if (output.name === "waveform") {
+              const rawData = response.infer_response?.raw_output_contents?.[0];
+
+              if (rawData) {
+                const alignedBuffer = rawData.buffer.slice(
+                  rawData.byteOffset,
+                  rawData.byteOffset + rawData.byteLength,
+                );
+                const chunk = new Float32Array(alignedBuffer);
+
+                // eslint-disable-next-line no-console
+                console.log(`🎵 Yielding audio chunk: ${chunk.length} samples`);
+                yield chunk;
+              }
+            }
+          }
+        }
+      }
+
+      await streamPromise;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("❌ Streaming synthesis failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * 将 gRPC call 转换为异步迭代器
+   */
+  private createAsyncIterator(call: any): AsyncIterable<any> {
+    const queue: any[] = [];
+    let resolveNext: ((value: IteratorResult<any>) => void) | null = null;
+    let rejectNext: ((error: any) => void) | null = null;
+    let done = false;
+
+    call.on("data", (data: any) => {
+      if (resolveNext) {
+        resolveNext({ value: data, done: false });
+        resolveNext = null;
+        rejectNext = null;
+      } else {
+        queue.push(data);
+      }
+    });
+
+    call.on("end", () => {
+      done = true;
+      if (resolveNext) {
+        resolveNext({ value: undefined, done: true });
+        resolveNext = null;
+        rejectNext = null;
+      }
+    });
+
+    call.on("error", (error: any) => {
+      if (rejectNext) {
+        rejectNext(error);
+        resolveNext = null;
+        rejectNext = null;
+      }
+    });
+
+    return {
+      [Symbol.asyncIterator]() {
+        return {
+          async next(): Promise<IteratorResult<any>> {
+            if (queue.length > 0) {
+              return { value: queue.shift(), done: false };
+            }
+
+            if (done) {
+              return { value: undefined, done: true };
+            }
+
+            return new Promise((resolve, reject) => {
+              resolveNext = resolve;
+              rejectNext = reject;
+            });
+          },
+        };
+      },
+    };
+  }
+
+  /**
+   * TTS语音合成（非流式）- 等待完整音频生成
    *
    * @param text 要说的文本
    * @param referenceAudio 声音样本（可选，用于克隆声音）

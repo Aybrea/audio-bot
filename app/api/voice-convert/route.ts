@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { TritonTTSClient, encodeWAV } from "@/lib/triton-tts-client";
+import { TritonTTSClient } from "@/lib/triton-tts-client";
 import { parseWavBuffer } from "@/lib/audio-utils";
 
 // TTS服务配置
@@ -70,32 +70,57 @@ export async function POST(request: NextRequest) {
 
     await ttsClient.initialize();
 
-    try {
-      // 执行TTS生成
-      const result = await ttsClient.synthesize(
-        text,
-        referenceSamples,
-        referenceText,
-      );
+    // 创建流式响应
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const audioChunks: Float32Array[] = [];
 
-      // eslint-disable-next-line no-console
-      console.log("TTS生成完成:", {
-        outputSamples: result.audio.length,
-        latency: result.latency.toFixed(2) + "s",
-      });
+          // 使用流式合成
+          for await (const chunk of ttsClient.synthesizeStream(
+            text,
+            referenceSamples,
+            referenceText,
+          )) {
+            // eslint-disable-next-line no-console
+            console.log(`📤 Sending chunk: ${chunk.length} samples`);
 
-      // 编码为 WAV 格式
-      const wavBuffer = encodeWAV(result.audio, ttsConfig.targetSampleRate);
+            // 收集所有块用于最后生成完整 WAV
+            audioChunks.push(chunk);
 
-      return new NextResponse(wavBuffer, {
-        headers: {
-          "Content-Type": "audio/wav",
-          "Content-Length": wavBuffer.length.toString(),
-        },
-      });
-    } finally {
-      ttsClient.close();
-    }
+            // 将 Float32Array 转换为 Buffer 并发送
+            const buffer = Buffer.from(chunk.buffer);
+
+            controller.enqueue(buffer);
+          }
+
+          // 所有块发送完成后，发送一个特殊的结束标记
+          // 使用一个空的 Float32Array 作为结束标记
+          const endMarker = new Float32Array(0);
+
+          controller.enqueue(Buffer.from(endMarker.buffer));
+
+          // eslint-disable-next-line no-console
+          console.log("✅ All chunks sent, total chunks:", audioChunks.length);
+
+          controller.close();
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error("❌ Streaming error:", error);
+          controller.error(error);
+        } finally {
+          ttsClient.close();
+        }
+      },
+    });
+
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Transfer-Encoding": "chunked",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("TTS生成失败:", error);

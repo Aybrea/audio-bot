@@ -6,9 +6,10 @@ import { Progress } from "@heroui/progress";
 
 interface AudioPlayerProps {
   src: string;
+  autoPlay?: boolean;
 }
 
-export function AudioPlayer({ src }: AudioPlayerProps) {
+export function AudioPlayer({ src, autoPlay = false }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -20,7 +21,20 @@ export function AudioPlayer({ src }: AudioPlayerProps) {
     if (!audio) return;
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+      if (autoPlay) {
+        audio
+          .play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch((error) => {
+            // eslint-disable-next-line no-console
+            console.error("Auto-play failed:", error);
+          });
+      }
+    };
     const handleEnded = () => setIsPlaying(false);
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
@@ -32,7 +46,7 @@ export function AudioPlayer({ src }: AudioPlayerProps) {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, []);
+  }, [autoPlay]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
