@@ -1,4 +1,10 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  experimental: {
+    outputFileTracingIncludes: {
+      '/api/voice-convert': ['./proto/**/*'],
+    },
+  },
+};
 
 module.exports = nextConfig;
