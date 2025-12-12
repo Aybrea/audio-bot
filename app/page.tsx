@@ -14,7 +14,7 @@ import { AudioPlayer } from "@/components/audio-player";
 
 export default function Home() {
   const [textToSpeak, setTextToSpeak] = useState(
-    "大家好，我是一个语音合成测试机器人。今天天气真不错，适合出去走走。希望这段测试文本能够帮助你验证服务是否正常工作。",
+    "阳光透过稠密的枝叶洒落下来，那一片宁静的森林仿佛被金色丝线所包围。清风拂过，满眼绿意化作层层涟漪，在心头荡漾。",
   );
   const [voiceMode, setVoiceMode] = useState<"default" | "custom">("default");
   const [referenceAudio, setReferenceAudio] = useState<Blob | null>(null);
