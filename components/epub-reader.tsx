@@ -170,6 +170,50 @@ export default function EpubReader() {
             type: "RENDITION_READY",
             rendition,
           });
+
+          // Add touch event listeners to rendition's iframe for mobile swipe
+          // Wait a bit for iframe to be ready
+          setTimeout(() => {
+            const iframe = document.querySelector(
+              `#${VIEWER_CONTAINER_ID} iframe`,
+            ) as HTMLIFrameElement;
+
+            if (iframe && iframe.contentDocument) {
+              const iframeDoc = iframe.contentDocument;
+
+              let touchStartX: number | null = null;
+              let touchEndX: number | null = null;
+              const minSwipeDistance = 50;
+
+              const handleTouchStart = (e: TouchEvent) => {
+                touchEndX = null;
+                touchStartX = e.touches[0].clientX;
+              };
+
+              const handleTouchMove = (e: TouchEvent) => {
+                touchEndX = e.touches[0].clientX;
+              };
+
+              const handleTouchEnd = () => {
+                if (!touchStartX || !touchEndX) return;
+
+                const distance = touchStartX - touchEndX;
+                const isLeftSwipe = distance > minSwipeDistance;
+                const isRightSwipe = distance < -minSwipeDistance;
+
+                if (isLeftSwipe && rendition) {
+                  rendition.next();
+                }
+                if (isRightSwipe && rendition) {
+                  rendition.prev();
+                }
+              };
+
+              iframeDoc.addEventListener("touchstart", handleTouchStart);
+              iframeDoc.addEventListener("touchmove", handleTouchMove);
+              iframeDoc.addEventListener("touchend", handleTouchEnd);
+            }
+          }, 500);
         } catch (error) {
           console.error("Failed to initialize rendition:", error);
           dispatch({
