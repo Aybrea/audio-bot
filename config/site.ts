@@ -28,6 +28,10 @@ export const siteConfig = {
       label: "Flappy Bird",
       href: "/flappy",
     },
+    {
+      label: "EPUB阅读器",
+      href: "/epub",
+    },
   ],
   navMenuItems: [
     {
@@ -53,6 +57,10 @@ export const siteConfig = {
     {
       label: "Flappy Bird",
       href: "/flappy",
+    },
+    {
+      label: "EPUB阅读器",
+      href: "/epub",
     },
   ],
   links: {
