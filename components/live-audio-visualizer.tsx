@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, memo } from "react";
 
 interface LiveAudioVisualizerProps {
   timeDomainData: Uint8Array | null;
@@ -8,22 +8,27 @@ interface LiveAudioVisualizerProps {
   isPlaying: boolean;
 }
 
-export function LiveAudioVisualizer({
+export const LiveAudioVisualizer = memo(function LiveAudioVisualizer({
   timeDomainData,
   frequencyData,
   isPlaying,
 }: LiveAudioVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [visualizationType] = useState<"frequency" | "waveform">("frequency");
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const dimensionsRef = useRef({ width: 0, height: 0, dpr: 1 });
 
+  // 初始化 canvas（只执行一次）
   useEffect(() => {
     const canvas = canvasRef.current;
 
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
 
     if (!ctx) return;
+
+    ctxRef.current = ctx;
 
     // 设置 canvas 尺寸
     const dpr = window.devicePixelRatio || 1;
@@ -33,12 +38,27 @@ export function LiveAudioVisualizer({
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
+    dimensionsRef.current = {
+      width: rect.width,
+      height: rect.height,
+      dpr,
+    };
+  }, []);
+
+  // 绘制可视化（数据更新时执行）
+  useEffect(() => {
+    const ctx = ctxRef.current;
+
+    if (!ctx) return;
+
+    const { width, height } = dimensionsRef.current;
+
     // 清空画布
-    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.clearRect(0, 0, width, height);
 
     // 绘制背景
     ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.fillRect(0, 0, width, height);
 
     if (!isPlaying || !frequencyData || !timeDomainData) {
       // 显示等待状态
@@ -47,8 +67,8 @@ export function LiveAudioVisualizer({
       ctx.textAlign = "center";
       ctx.fillText(
         isPlaying ? "正在播放..." : "等待播放",
-        rect.width / 2,
-        rect.height / 2,
+        width / 2,
+        height / 2,
       );
 
       return;
@@ -57,7 +77,7 @@ export function LiveAudioVisualizer({
     if (visualizationType === "frequency") {
       // 绘制频谱（类似均衡器）
       const barCount = 64; // 显示的柱子数量
-      const barWidth = rect.width / barCount;
+      const barWidth = width / barCount;
       const dataStep = Math.floor(frequencyData.length / barCount);
 
       for (let i = 0; i < barCount; i++) {
@@ -70,26 +90,20 @@ export function LiveAudioVisualizer({
         const average = sum / dataStep;
 
         // 计算柱子高度（0-255 映射到 0-height）
-        const barHeight = (average / 255) * rect.height;
+        const barHeight = (average / 255) * height;
 
-        // 创建渐变色
-        const gradient = ctx.createLinearGradient(
-          0,
-          rect.height - barHeight,
-          0,
-          rect.height,
-        );
+        // 绘制柱子
+        const x = i * barWidth;
+        const y = height - barHeight;
+
+        // 创建渐变色（从柱子顶部到底部）
+        const gradient = ctx.createLinearGradient(0, y, 0, height);
 
         gradient.addColorStop(0, "#f43f5e");
         gradient.addColorStop(0.5, "#fb7185");
         gradient.addColorStop(1, "#fda4af");
 
         ctx.fillStyle = gradient;
-
-        // 绘制柱子
-        const x = i * barWidth;
-        const y = rect.height - barHeight;
-
         ctx.fillRect(x, y, barWidth - 2, barHeight);
       }
     } else {
@@ -98,12 +112,12 @@ export function LiveAudioVisualizer({
       ctx.lineWidth = 2;
       ctx.beginPath();
 
-      const sliceWidth = rect.width / timeDomainData.length;
+      const sliceWidth = width / timeDomainData.length;
       let x = 0;
 
       for (let i = 0; i < timeDomainData.length; i++) {
         const v = timeDomainData[i] / 128.0;
-        const y = (v * rect.height) / 2;
+        const y = (v * height) / 2;
 
         if (i === 0) {
           ctx.moveTo(x, y);
@@ -114,7 +128,7 @@ export function LiveAudioVisualizer({
         x += sliceWidth;
       }
 
-      ctx.lineTo(rect.width, rect.height / 2);
+      ctx.lineTo(width, height / 2);
       ctx.stroke();
     }
   }, [timeDomainData, frequencyData, isPlaying, visualizationType]);
@@ -128,4 +142,4 @@ export function LiveAudioVisualizer({
       />
     </div>
   );
-}
+});

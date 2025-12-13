@@ -11,6 +11,8 @@ export class StreamingAudioPlayer {
   private scheduledBuffers: AudioBufferSourceNode[] = [];
   private analyser: AnalyserNode;
   private gainNode: GainNode;
+  private frequencyDataArray: Uint8Array<ArrayBuffer>;
+  private timeDomainDataArray: Uint8Array<ArrayBuffer>;
 
   constructor(sampleRate: number = 24000) {
     this.audioContext = new AudioContext({ sampleRate });
@@ -27,6 +29,11 @@ export class StreamingAudioPlayer {
     // 连接：gainNode -> analyser -> destination
     this.gainNode.connect(this.analyser);
     this.analyser.connect(this.audioContext.destination);
+
+    // 预分配数组以避免频繁创建
+    const bufferLength = this.analyser.frequencyBinCount;
+    this.frequencyDataArray = new Uint8Array(bufferLength);
+    this.timeDomainDataArray = new Uint8Array(bufferLength);
   }
 
   /**
@@ -135,26 +142,22 @@ export class StreamingAudioPlayer {
 
   /**
    * 获取频域数据（频谱）
+   * 复用预分配的数组以提高性能
    */
   getFrequencyData(): Uint8Array {
-    const bufferLength = this.analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
+    this.analyser.getByteFrequencyData(this.frequencyDataArray);
 
-    this.analyser.getByteFrequencyData(dataArray);
-
-    return dataArray;
+    return this.frequencyDataArray;
   }
 
   /**
    * 获取时域数据（波形）
+   * 复用预分配的数组以提高性能
    */
   getTimeDomainData(): Uint8Array {
-    const bufferLength = this.analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
+    this.analyser.getByteTimeDomainData(this.timeDomainDataArray);
 
-    this.analyser.getByteTimeDomainData(dataArray);
-
-    return dataArray;
+    return this.timeDomainDataArray;
   }
 }
 
@@ -182,14 +185,25 @@ export async function playStreamingAudio(
   const allChunks: Float32Array[] = [];
   let animationId: number | null = null;
 
-  // 启动分析器数据更新循环
+  // 启动分析器数据更新循环（节流到约 30fps）
   if (onAnalyserUpdate) {
-    const updateAnalyser = () => {
-      if (player.getIsPlaying()) {
-        const timeDomainData = player.getTimeDomainData();
-        const frequencyData = player.getFrequencyData();
+    let lastUpdateTime = 0;
+    const updateInterval = 1000 / 30; // 30fps，约 33ms
 
-        onAnalyserUpdate(timeDomainData, frequencyData);
+    const updateAnalyser = (currentTime: number) => {
+      if (player.getIsPlaying()) {
+        // 节流：只在间隔时间后才更新
+        if (currentTime - lastUpdateTime >= updateInterval) {
+          const timeDomainData = player.getTimeDomainData();
+          const frequencyData = player.getFrequencyData();
+
+          // 创建数组副本以确保 React 能检测到变化
+          onAnalyserUpdate(
+            new Uint8Array(timeDomainData),
+            new Uint8Array(frequencyData),
+          );
+          lastUpdateTime = currentTime;
+        }
       }
       animationId = requestAnimationFrame(updateAnalyser);
     };
