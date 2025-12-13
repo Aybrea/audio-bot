@@ -13,10 +13,15 @@ export class StreamingAudioPlayer {
   private gainNode: GainNode;
   private frequencyDataArray: Uint8Array<ArrayBuffer>;
   private timeDomainDataArray: Uint8Array<ArrayBuffer>;
+  private isBuffering: boolean = true;
+  private bufferThreshold: number;
+  private bufferedChunks: Float32Array[] = [];
+  private bufferedDuration: number = 0;
 
-  constructor(sampleRate: number = 24000) {
+  constructor(sampleRate: number = 24000, bufferThreshold: number = 1.0) {
     this.audioContext = new AudioContext({ sampleRate });
     this.sampleRate = sampleRate;
+    this.bufferThreshold = bufferThreshold;
 
     // 创建分析器节点
     this.analyser = this.audioContext.createAnalyser();
@@ -38,13 +43,56 @@ export class StreamingAudioPlayer {
 
   /**
    * 播放音频块
+   * @returns true 如果缓冲完成或已经在播放，false 如果仍在缓冲中
    */
-  playChunk(audioData: Float32Array) {
+  playChunk(audioData: Float32Array): boolean {
     if (audioData.length === 0) {
       // 空数据，可能是结束标记
-      return;
+      return !this.isBuffering;
     }
 
+    if (this.isBuffering) {
+      // 缓冲模式：累积音频块
+      this.bufferedChunks.push(audioData);
+      const duration = audioData.length / this.sampleRate;
+
+      this.bufferedDuration += duration;
+
+      // eslint-disable-next-line no-console
+      console.log(
+        `📦 Buffering chunk: ${audioData.length} samples, duration: ${duration.toFixed(2)}s, total buffered: ${this.bufferedDuration.toFixed(2)}s`,
+      );
+
+      // 检查是否达到缓冲阈值
+      if (this.bufferedDuration >= this.bufferThreshold) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `✅ Buffer threshold reached (${this.bufferedDuration.toFixed(2)}s >= ${this.bufferThreshold}s), starting playback`,
+        );
+        this.isBuffering = false;
+
+        // 播放所有缓冲的音频块
+        for (const chunk of this.bufferedChunks) {
+          this.playChunkInternal(chunk);
+        }
+        this.bufferedChunks = [];
+
+        return true; // 缓冲完成
+      }
+
+      return false; // 仍在缓冲中
+    } else {
+      // 正常播放模式：立即播放
+      this.playChunkInternal(audioData);
+
+      return true;
+    }
+  }
+
+  /**
+   * 内部方法：实际播放音频块
+   */
+  private playChunkInternal(audioData: Float32Array) {
     // 创建 AudioBuffer
     const audioBuffer = this.audioContext.createBuffer(
       1, // 单声道
@@ -174,16 +222,19 @@ export async function playStreamingAudio(
     timeDomainData: Uint8Array,
     frequencyData: Uint8Array,
   ) => void,
+  onBufferingComplete?: () => void,
+  bufferThreshold: number = 1.0,
 ): Promise<Float32Array> {
   if (!response.body) {
     throw new Error("Response body is null");
   }
 
-  const player = new StreamingAudioPlayer(sampleRate);
+  const player = new StreamingAudioPlayer(sampleRate, bufferThreshold);
   const reader = response.body.getReader();
   let buffer = new Uint8Array(0);
   const allChunks: Float32Array[] = [];
   let animationId: number | null = null;
+  let bufferingCompleteCallbackCalled = false;
 
   // 启动分析器数据更新循环（节流到约 30fps）
   if (onAnalyserUpdate) {
@@ -251,7 +302,19 @@ export async function playStreamingAudio(
         const floatArray = new Float32Array(alignedBuffer);
 
         // 播放这个块
-        player.playChunk(floatArray);
+        const bufferingComplete = player.playChunk(floatArray);
+
+        // 如果缓冲完成且回调未被调用，则调用回调
+        if (
+          bufferingComplete &&
+          !bufferingCompleteCallbackCalled &&
+          onBufferingComplete
+        ) {
+          bufferingCompleteCallbackCalled = true;
+          onBufferingComplete();
+          // eslint-disable-next-line no-console
+          console.log("🎉 Buffering complete callback triggered");
+        }
 
         // 收集这个块用于后续生成完整文件
         allChunks.push(floatArray);

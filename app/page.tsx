@@ -157,7 +157,6 @@ export default function Home() {
   const handleSelectRecord = () => {
     setVoiceMode({ type: "record" });
     setReferenceAudio(null);
-    setReferenceText("");
   };
 
   // 将任意音频格式转换为 WAV Blob
@@ -296,14 +295,6 @@ export default function Home() {
       });
 
       if (response.ok) {
-        // 开始流式播放
-        setIsStreaming(true);
-        addToast({
-          title: "开始播放语音",
-          description: "正在实时生成并播放语音",
-          color: "success",
-        });
-
         // 流式播放音频并获取完整数据
         const audioData = await playStreamingAudio(
           response,
@@ -317,6 +308,16 @@ export default function Home() {
             // 实时更新分析器数据
             setAnalyserData({ timeDomain, frequency });
           },
+          () => {
+            // 缓冲完成，开始播放
+            setIsStreaming(true);
+            addToast({
+              title: "开始播放语音",
+              description: "正在实时生成并播放语音",
+              color: "success",
+            });
+          },
+          1.0,
         );
 
         // 生成完整的 WAV 文件
@@ -607,6 +608,7 @@ export default function Home() {
                   placeholder="大家好，今天天气真不错，心情也很愉快。"
                   value={referenceText}
                   onValueChange={setReferenceText}
+                  isClearable
                 />
               </div>
             </div>
