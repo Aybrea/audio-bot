@@ -24,6 +24,10 @@ export const siteConfig = {
       label: "蕾塞之舞",
       href: "/raze",
     },
+    {
+      label: "Flappy Bird",
+      href: "/flappy",
+    },
   ],
   navMenuItems: [
     {
@@ -45,6 +49,10 @@ export const siteConfig = {
     {
       label: "蕾塞之舞",
       href: "/raze",
+    },
+    {
+      label: "Flappy Bird",
+      href: "/flappy",
     },
   ],
   links: {
