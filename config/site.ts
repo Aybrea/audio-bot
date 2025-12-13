@@ -20,6 +20,10 @@ export const siteConfig = {
       label: "历史上的今天",
       href: "/history",
     },
+    {
+      label: "蕾塞之舞",
+      href: "/raze",
+    },
   ],
   navMenuItems: [
     {
@@ -37,6 +41,10 @@ export const siteConfig = {
     {
       label: "历史上的今天",
       href: "/history",
+    },
+    {
+      label: "蕾塞之舞",
+      href: "/raze",
     },
   ],
   links: {
