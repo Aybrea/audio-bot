@@ -27,10 +27,14 @@ export default function RazePage() {
               className="max-w-full max-h-[85vh] w-auto h-auto"
               controls
               preload="metadata"
-              poster="/video/cover.jpg"
+              poster={process.env.NEXT_PUBLIC_RAZE_VIDEO_POSTER || "/video/cover.jpg"}
               onEnded={handleVideoEnd}
+              crossOrigin="anonymous"
             >
-              <source src="/video/Chainsaw-Man-RezeDance.mp4" type="video/mp4" />
+              <source
+                src={process.env.NEXT_PUBLIC_RAZE_VIDEO_URL || "/video/Chainsaw-Man-RezeDance.mp4"}
+                type="video/mp4"
+              />
               您的浏览器不支持视频播放。
             </video>
             <VideoLyricsOverlay
