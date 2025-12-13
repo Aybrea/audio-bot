@@ -51,9 +51,10 @@ export default function RazePage() {
           onAnimationEnd={handleAnimationEnd}
         >
           <img
-            src="/video/end.webp"
+            src={process.env.NEXT_PUBLIC_RAZE_END_IMAGE || "/video/haoye.webp"}
             alt="End animation"
             className="w-auto h-auto max-w-full animate-rise-up"
+            crossOrigin="anonymous"
           />
         </div>
       )}
