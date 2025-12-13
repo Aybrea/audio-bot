@@ -18,13 +18,13 @@ export default function RazePage() {
   };
 
   return (
-    <section className="flex items-center justify-center min-h-screen">
-      <div className="w-full max-w-5xl">
+    <section className="flex items-center justify-center h-screen overflow-hidden">
+      <div className="w-full max-w-5xl h-full flex items-center justify-center">
         <Card className="overflow-hidden">
           <CardBody className="p-0 flex items-center justify-center relative">
             <video
               ref={videoRef}
-              className="w-full h-auto"
+              className="max-w-full max-h-[85vh] w-auto h-auto"
               controls
               preload="metadata"
               poster="/video/cover.jpg"
