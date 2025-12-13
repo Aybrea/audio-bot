@@ -16,6 +16,10 @@ export const siteConfig = {
       label: "俄罗斯方块",
       href: "/tetris",
     },
+    {
+      label: "历史上的今天",
+      href: "/history",
+    },
   ],
   navMenuItems: [
     {
@@ -29,6 +33,10 @@ export const siteConfig = {
     {
       label: "俄罗斯方块",
       href: "/tetris",
+    },
+    {
+      label: "历史上的今天",
+      href: "/history",
     },
   ],
   links: {
