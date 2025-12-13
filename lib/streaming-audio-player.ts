@@ -37,6 +37,7 @@ export class StreamingAudioPlayer {
 
     // 预分配数组以避免频繁创建
     const bufferLength = this.analyser.frequencyBinCount;
+
     this.frequencyDataArray = new Uint8Array(bufferLength);
     this.timeDomainDataArray = new Uint8Array(bufferLength);
   }

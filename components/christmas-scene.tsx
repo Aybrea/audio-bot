@@ -14,14 +14,16 @@ export default function ChristmasScene() {
     };
 
     checkMobile();
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
 
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Show nothing during initial render to avoid hydration mismatch
   if (isMobile === null) {
-    return <div className="fixed inset-0 w-full h-full bg-gradient-to-b from-blue-950 via-blue-900 to-blue-800" />;
+    return (
+      <div className="fixed inset-0 w-full h-full bg-gradient-to-b from-blue-950 via-blue-900 to-blue-800" />
+    );
   }
 
   // Use lightweight mobile version for better performance

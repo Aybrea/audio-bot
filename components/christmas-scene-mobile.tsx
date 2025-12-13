@@ -3,8 +3,19 @@
 import { useEffect, useState } from "react";
 
 export default function ChristmasSceneMobile() {
-  const [stars, setStars] = useState<Array<{ id: number; size: number; left: number; top: number }>>([]);
-  const [snowflakes, setSnowflakes] = useState<Array<{ id: number; size: number; left: number; top: number; duration: number; delay: number }>>([]);
+  const [stars, setStars] = useState<
+    Array<{ id: number; size: number; left: number; top: number }>
+  >([]);
+  const [snowflakes, setSnowflakes] = useState<
+    Array<{
+      id: number;
+      size: number;
+      left: number;
+      top: number;
+      duration: number;
+      delay: number;
+    }>
+  >([]);
 
   useEffect(() => {
     setStars(
@@ -32,12 +43,21 @@ export default function ChristmasSceneMobile() {
     <div className="fixed inset-0 w-full h-full overflow-hidden bg-gradient-to-b from-blue-950 via-blue-900 to-blue-800">
       <style jsx>{`
         @keyframes twinkle {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 1; }
+          0%,
+          100% {
+            opacity: 0.3;
+          }
+          50% {
+            opacity: 1;
+          }
         }
         @keyframes snowfall {
-          from { transform: translateY(-10vh); }
-          to { transform: translateY(110vh); }
+          from {
+            transform: translateY(-10vh);
+          }
+          to {
+            transform: translateY(110vh);
+          }
         }
       `}</style>
 
@@ -51,7 +71,7 @@ export default function ChristmasSceneMobile() {
             height: star.size,
             left: `${star.left}%`,
             top: `${star.top}%`,
-            animation: 'twinkle 3s ease-in-out infinite',
+            animation: "twinkle 3s ease-in-out infinite",
             animationDelay: `${Math.random() * 2}s`,
           }}
         />
@@ -80,7 +100,11 @@ export default function ChristmasSceneMobile() {
 
       {/* Static ground */}
       <div className="absolute bottom-0 left-0 w-full">
-        <svg className="w-full h-auto" preserveAspectRatio="none" viewBox="0 0 1200 200">
+        <svg
+          className="w-full h-auto"
+          preserveAspectRatio="none"
+          viewBox="0 0 1200 200"
+        >
           <defs>
             <linearGradient id="snowGradient" x1="0%" x2="0%" y1="0%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />

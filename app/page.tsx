@@ -404,15 +404,15 @@ export default function Home() {
             请输入中文文字内容（当前服务仅支持中文）
           </p>
         </CardHeader>
-        <CardBody className="gap-3" suppressHydrationWarning>
+        <CardBody suppressHydrationWarning className="gap-3">
           <Textarea
+            isClearable
             description={`已输入 ${textToSpeak.length} 字`}
             label="要说的内容（中文）"
             minRows={4}
             placeholder="请在这里输入中文内容，例如：大家好，今天天气真不错..."
             value={textToSpeak}
             onValueChange={setTextToSpeak}
-            isClearable
           />
         </CardBody>
       </Card>
@@ -602,13 +602,13 @@ export default function Home() {
 
               <div suppressHydrationWarning>
                 <Textarea
+                  isClearable
                   description="⚠️ 录音时请朗读此处填写的文本内容，确保录音与文本完全一致"
                   label="声音样本的文字内容"
                   minRows={3}
                   placeholder="大家好，今天天气真不错，心情也很愉快。"
                   value={referenceText}
                   onValueChange={setReferenceText}
-                  isClearable
                 />
               </div>
             </div>

@@ -12,6 +12,10 @@ export const siteConfig = {
       label: "圣诞节",
       href: "/christmas",
     },
+    {
+      label: "俄罗斯方块",
+      href: "/tetris",
+    },
   ],
   navMenuItems: [
     {
@@ -21,6 +25,10 @@ export const siteConfig = {
     {
       label: "圣诞节",
       href: "/christmas",
+    },
+    {
+      label: "俄罗斯方块",
+      href: "/tetris",
     },
   ],
   links: {

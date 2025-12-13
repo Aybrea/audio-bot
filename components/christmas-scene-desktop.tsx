@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-
 import { motion } from "framer-motion";
 
 export default function ChristmasScene() {
@@ -102,7 +101,11 @@ export default function ChristmasScene() {
 
       {/* Ground snow */}
       <div className="absolute bottom-0 left-0 w-full">
-        <svg className="w-full h-auto" preserveAspectRatio="none" viewBox="0 0 1200 200">
+        <svg
+          className="w-full h-auto"
+          preserveAspectRatio="none"
+          viewBox="0 0 1200 200"
+        >
           <defs>
             <linearGradient id="snowGradient" x1="0%" x2="0%" y1="0%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
@@ -131,8 +134,8 @@ export default function ChristmasScene() {
       {/* Houses */}
       <motion.div
         className="absolute bottom-24 md:bottom-32 left-4 md:left-20 scale-75 md:scale-100"
-        whileHover={{ scale: 1.05 }}
         transition={{ type: "spring", stiffness: 300 }}
+        whileHover={{ scale: 1.05 }}
       >
         <div className="relative">
           {/* House 1 */}
@@ -173,8 +176,8 @@ export default function ChristmasScene() {
       {/* Christmas Tree */}
       <motion.div
         className="absolute bottom-24 md:bottom-32 left-1/2 -translate-x-1/2 scale-75 md:scale-100"
-        whileHover={{ scale: 1.05 }}
         transition={{ type: "spring", stiffness: 300 }}
+        whileHover={{ scale: 1.05 }}
       >
         <motion.div
           animate={{
@@ -226,7 +229,12 @@ export default function ChristmasScene() {
                   style={{
                     left: (i - 2) * 20 + "px",
                     top: i * 12 + 10 + "px",
-                    backgroundColor: ["#ef4444", "#fbbf24", "#3b82f6", "#e5e7eb"][i % 4],
+                    backgroundColor: [
+                      "#ef4444",
+                      "#fbbf24",
+                      "#3b82f6",
+                      "#e5e7eb",
+                    ][i % 4],
                     boxShadow: `0 0 10px ${["#ef4444", "#fbbf24", "#3b82f6", "#e5e7eb"][i % 4]}`,
                   }}
                   transition={{
@@ -252,7 +260,12 @@ export default function ChristmasScene() {
                   style={{
                     left: (i - 3) * 25 + "px",
                     top: i * 15 + 10 + "px",
-                    backgroundColor: ["#ef4444", "#fbbf24", "#3b82f6", "#e5e7eb"][i % 4],
+                    backgroundColor: [
+                      "#ef4444",
+                      "#fbbf24",
+                      "#3b82f6",
+                      "#e5e7eb",
+                    ][i % 4],
                     boxShadow: `0 0 10px ${["#ef4444", "#fbbf24", "#3b82f6", "#e5e7eb"][i % 4]}`,
                   }}
                   transition={{
@@ -278,7 +291,12 @@ export default function ChristmasScene() {
                   style={{
                     left: (i - 4) * 30 + "px",
                     top: i * 12 + 10 + "px",
-                    backgroundColor: ["#ef4444", "#fbbf24", "#3b82f6", "#e5e7eb"][i % 4],
+                    backgroundColor: [
+                      "#ef4444",
+                      "#fbbf24",
+                      "#3b82f6",
+                      "#e5e7eb",
+                    ][i % 4],
                     boxShadow: `0 0 10px ${["#ef4444", "#fbbf24", "#3b82f6", "#e5e7eb"][i % 4]}`,
                   }}
                   transition={{
@@ -300,8 +318,8 @@ export default function ChristmasScene() {
       {/* Snowman */}
       <motion.div
         className="absolute bottom-24 md:bottom-32 right-8 md:right-32 scale-75 md:scale-100"
-        whileHover={{ scale: 1.05 }}
         transition={{ type: "spring", stiffness: 300 }}
+        whileHover={{ scale: 1.05 }}
       >
         <motion.div
           animate={{
@@ -355,7 +373,11 @@ export default function ChristmasScene() {
         {[
           { color: "from-red-500 to-red-700", size: "w-12 h-12", delay: 0 },
           { color: "from-blue-500 to-blue-700", size: "w-16 h-14", delay: 0.3 },
-          { color: "from-green-500 to-green-700", size: "w-10 h-16", delay: 0.6 },
+          {
+            color: "from-green-500 to-green-700",
+            size: "w-10 h-16",
+            delay: 0.6,
+          },
         ].map((gift, idx) => (
           <motion.div
             key={`gift-${idx}`}
@@ -371,7 +393,9 @@ export default function ChristmasScene() {
             }}
             whileHover={{ scale: 1.1, rotate: 5 }}
           >
-            <div className={`${gift.size} bg-gradient-to-br ${gift.color} border-2 border-gray-700 shadow-xl`}>
+            <div
+              className={`${gift.size} bg-gradient-to-br ${gift.color} border-2 border-gray-700 shadow-xl`}
+            >
               {/* Ribbon vertical */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-full bg-gradient-to-b from-yellow-200 to-yellow-400 shadow-md" />
               {/* Ribbon horizontal */}
