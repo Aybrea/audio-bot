@@ -404,7 +404,7 @@ export default function Home() {
             请输入中文文字内容（当前服务仅支持中文）
           </p>
         </CardHeader>
-        <CardBody className="gap-3">
+        <CardBody className="gap-3" suppressHydrationWarning>
           <Textarea
             description={`已输入 ${textToSpeak.length} 字`}
             label="要说的内容（中文）"
@@ -600,7 +600,7 @@ export default function Home() {
                 )}
               </div>
 
-              <div>
+              <div suppressHydrationWarning>
                 <Textarea
                   description="⚠️ 录音时请朗读此处填写的文本内容，确保录音与文本完全一致"
                   label="声音样本的文字内容"
