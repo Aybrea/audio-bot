@@ -160,6 +160,53 @@ export default function Home() {
     setReferenceText("");
   };
 
+  // 将任意音频格式转换为 WAV Blob
+  const convertToWav = async (
+    audioBlob: Blob,
+    targetSampleRate: number = 16000,
+  ): Promise<Blob> => {
+    try {
+      // 使用 Web Audio API 解码音频
+      const audioContext = new AudioContext({ sampleRate: targetSampleRate });
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+      // 获取第一个声道的数据
+      const samples = audioBuffer.getChannelData(0);
+
+      // 如果采样率不匹配，需要重采样
+      let finalSamples = samples;
+
+      if (audioBuffer.sampleRate !== targetSampleRate) {
+        // 简单的线性插值重采样
+        const ratio = targetSampleRate / audioBuffer.sampleRate;
+        const outputLength = Math.floor(samples.length * ratio);
+        const resampled = new Float32Array(outputLength);
+
+        for (let i = 0; i < outputLength; i++) {
+          const srcIndex = i / ratio;
+          const srcIndexFloor = Math.floor(srcIndex);
+          const srcIndexCeil = Math.min(srcIndexFloor + 1, samples.length - 1);
+          const t = srcIndex - srcIndexFloor;
+
+          resampled[i] =
+            samples[srcIndexFloor] * (1 - t) + samples[srcIndexCeil] * t;
+        }
+        finalSamples = resampled;
+      }
+
+      // 关闭 AudioContext
+      await audioContext.close();
+
+      // 创建 WAV Blob
+      return createWavBlob(finalSamples, targetSampleRate);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("音频转换失败:", error);
+      throw error;
+    }
+  };
+
   // 将 Float32Array 转换为 WAV Blob
   const createWavBlob = (samples: Float32Array, sampleRate: number): Blob => {
     const numChannels = 1;
@@ -233,7 +280,10 @@ export default function Home() {
         (voiceMode.type === "sample" || voiceMode.type === "record") &&
         referenceAudio
       ) {
-        formData.append("referenceAudio", referenceAudio);
+        // 转换为 WAV 格式（16kHz 采样率）
+        const wavBlob = await convertToWav(referenceAudio, 16000);
+
+        formData.append("referenceAudio", wavBlob, "reference.wav");
         formData.append(
           "referenceText",
           referenceText.trim() || DEFAULT_REFERENCE_TEXT,
