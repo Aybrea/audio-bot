@@ -11,8 +11,8 @@ export class StreamingAudioPlayer {
   private scheduledBuffers: AudioBufferSourceNode[] = [];
   private analyser: AnalyserNode;
   private gainNode: GainNode;
-  private frequencyDataArray: Uint8Array<ArrayBuffer>;
-  private timeDomainDataArray: Uint8Array<ArrayBuffer>;
+  private frequencyDataArray: Uint8Array;
+  private timeDomainDataArray: Uint8Array;
   private isBuffering: boolean = true;
   private bufferThreshold: number;
   private bufferedChunks: Float32Array[] = [];

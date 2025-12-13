@@ -14,7 +14,7 @@ import { gameReducer, initialGameState } from "@/lib/tetris-engine";
 export default function TetrisGame() {
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameLoopRef = useRef<number>();
+  const gameLoopRef = useRef<number | undefined>(undefined);
 
   // Game loop with requestAnimationFrame
   useEffect(() => {

@@ -10,7 +10,7 @@ import { getGhostPieceY } from "@/lib/tetris-collision";
 interface TetrisBoardProps {
   board: Board;
   currentPiece: Piece | null;
-  canvasRef: RefObject<HTMLCanvasElement>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
 function getCellSize(): number {
