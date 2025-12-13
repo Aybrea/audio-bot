@@ -27,6 +27,8 @@ type VoiceMode =
   | { type: "record" };
 
 export default function Home() {
+  const DEFAULT_REFERENCE_TEXT = "大家好，今天天气真不错，心情也很愉快。";
+
   const [textToSpeak, setTextToSpeak] = useState(
     "阳光透过稠密的枝叶洒落下来，那一片宁静的森林仿佛被金色丝线所包围。清风拂过，满眼绿意化作层层涟漪，在心头荡漾。",
   );
@@ -34,7 +36,7 @@ export default function Home() {
   const [sampleFiles, setSampleFiles] = useState<SampleFile[]>([]);
   const [loadingSamples, setLoadingSamples] = useState(true);
   const [referenceAudio, setReferenceAudio] = useState<Blob | null>(null);
-  const [referenceText, setReferenceText] = useState("");
+  const [referenceText, setReferenceText] = useState(DEFAULT_REFERENCE_TEXT);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null);
@@ -211,11 +213,8 @@ export default function Home() {
       return;
     }
 
-    // 如果选择自行录音，必须提供音频和转录文本
-    if (
-      voiceMode.type === "record" &&
-      (!referenceAudio || !referenceText.trim())
-    ) {
+    // 如果选择自行录音，必须提供音频
+    if (voiceMode.type === "record" && !referenceAudio) {
       return;
     }
 
@@ -232,11 +231,13 @@ export default function Home() {
       // 样本音源或自行录音模式时添加参考音频和文本
       if (
         (voiceMode.type === "sample" || voiceMode.type === "record") &&
-        referenceAudio &&
-        referenceText.trim()
+        referenceAudio
       ) {
         formData.append("referenceAudio", referenceAudio);
-        formData.append("referenceText", referenceText);
+        formData.append(
+          "referenceText",
+          referenceText.trim() || DEFAULT_REFERENCE_TEXT,
+        );
       }
 
       const response = await fetch("/api/voice-convert", {
@@ -309,9 +310,7 @@ export default function Home() {
     textToSpeak.trim() !== "" &&
     (voiceMode.type === "default" ||
       (voiceMode.type === "sample" && referenceAudio !== null) ||
-      (voiceMode.type === "record" &&
-        referenceAudio !== null &&
-        referenceText.trim() !== ""));
+      (voiceMode.type === "record" && referenceAudio !== null));
 
   // 下载生成的音频
   const handleDownload = () => {
@@ -321,6 +320,19 @@ export default function Home() {
 
     a.href = resultAudioUrl;
     a.download = `voice-${Date.now()}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  // 下载录音样本
+  const handleDownloadRecording = () => {
+    if (!referenceAudioUrl) return;
+
+    const a = document.createElement("a");
+
+    a.href = referenceAudioUrl;
+    a.download = `recording-${Date.now()}.wav`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -343,11 +355,13 @@ export default function Home() {
         </CardHeader>
         <CardBody className="gap-3">
           <Textarea
+            description={`已输入 ${textToSpeak.length} 字`}
             label="要说的内容（中文）"
             minRows={4}
             placeholder="请在这里输入中文内容，例如：大家好，今天天气真不错..."
             value={textToSpeak}
             onValueChange={setTextToSpeak}
+            isClearable
           />
         </CardBody>
       </Card>
@@ -527,7 +541,10 @@ export default function Home() {
                         清除
                       </Button>
                     </div>
-                    <WaveformPlayer src={referenceAudioUrl} />
+                    <WaveformPlayer
+                      src={referenceAudioUrl}
+                      onDownload={handleDownloadRecording}
+                    />
                   </div>
                 )}
               </div>
@@ -548,16 +565,29 @@ export default function Home() {
       </Card>
 
       {/* 生成按钮 */}
-      <Button
-        className="w-full max-w-2xl"
-        color="danger"
-        isDisabled={!canGenerate || isGenerating}
-        isLoading={isGenerating}
-        size="lg"
-        onPress={handleGenerate}
-      >
-        {isGenerating ? "正在转换" : resultAudioUrl ? "重新转换" : "转换语音"}
-      </Button>
+      <div className="w-full max-w-2xl flex flex-col gap-2">
+        <Button
+          className="w-full"
+          color="danger"
+          isDisabled={!canGenerate || isGenerating}
+          isLoading={isGenerating}
+          size="lg"
+          onPress={handleGenerate}
+        >
+          {isGenerating ? "正在转换" : resultAudioUrl ? "重新转换" : "转换语音"}
+        </Button>
+        {!canGenerate && !isGenerating && (
+          <p className="text-xs text-default-400 text-center">
+            {voiceMode.type === "sample" && !referenceAudio
+              ? "请选择样本音源"
+              : voiceMode.type === "record" && !referenceAudio
+                ? "请先录制声音样本"
+                : !textToSpeak.trim()
+                  ? "请先输入要说的内容"
+                  : ""}
+          </p>
+        )}
+      </div>
 
       {/* 播放状态和控件 */}
       {(isGenerating || isStreaming || resultAudioUrl) && (
