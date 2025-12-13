@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    outputFileTracingIncludes: {
-      '/api/voice-convert': ['./proto/**/*'],
-    },
+  outputFileTracingIncludes: {
+    '/api/voice-convert': ['./proto/**/*'],
   },
 };
 
