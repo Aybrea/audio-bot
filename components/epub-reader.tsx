@@ -29,6 +29,39 @@ export default function EpubReader() {
   const containerReady = useRef(false);
   const [currentChapter, setCurrentChapter] = useState<string>("");
 
+  // Touch swipe state for mobile navigation
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50; // Minimum swipe distance in pixels
+
+  // Touch swipe handlers
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && state.rendition) {
+      // Swipe left -> next page
+      state.rendition.next();
+    }
+    if (isRightSwipe && state.rendition) {
+      // Swipe right -> previous page
+      state.rendition.prev();
+    }
+  };
+
   // Helper function to find chapter name from TOC
   const findChapterName = (href: string, toc: any[]): string => {
     for (const item of toc) {
@@ -192,7 +225,7 @@ export default function EpubReader() {
       {(state.status === "idle" || state.status === "error") && (
         <div className="w-full flex flex-col items-center gap-4">
           <EpubUpload
-            isLoading={state.status === "loading"}
+            isLoading={false}
             onFileSelect={handleFileSelect}
           />
           {state.errorMessage && (
@@ -237,7 +270,13 @@ export default function EpubReader() {
                 variant="flat"
                 isIconOnly
                 className="md:w-auto md:px-4"
-                onPress={() => dispatch({ type: "CLOSE_BOOK" })}
+                onPress={() => {
+                  // Reset refs before closing
+                  renditionInitialized.current = false;
+                  containerReady.current = false;
+                  setCurrentChapter("");
+                  dispatch({ type: "CLOSE_BOOK" });
+                }}
               >
                 <span className="hidden md:inline">关闭</span>
                 <span className="md:hidden">✕</span>
@@ -251,8 +290,13 @@ export default function EpubReader() {
             )}
           </header>
 
-          {/* Viewer - Full Height */}
-          <div className="flex-1 overflow-hidden">
+          {/* Viewer - Full Height with Touch Support */}
+          <div
+            className="flex-1 overflow-hidden"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
             <EpubViewer
               containerId={VIEWER_CONTAINER_ID}
               onReady={handleContainerReady}

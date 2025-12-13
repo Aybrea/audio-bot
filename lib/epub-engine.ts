@@ -51,11 +51,23 @@ export async function loadEpubFromFile(file: File): Promise<{
     await book.loaded.navigation;
 
     // Extract metadata
+    let coverUrl: string | undefined;
+
+    try {
+      // coverUrl is a method that returns a Promise
+      if (typeof book.coverUrl === "function") {
+        coverUrl = (await book.coverUrl()) || undefined;
+      }
+    } catch (error) {
+      // Cover is optional, ignore errors
+      coverUrl = undefined;
+    }
+
     const metadata: BookMetadata = {
       title: book.packaging.metadata.title || "Unknown Title",
       author: book.packaging.metadata.creator || "Unknown Author",
       identifier: generateBookId(book.packaging.metadata),
-      cover: book.coverUrl || undefined,
+      cover: coverUrl,
     };
 
     // Parse table of contents
