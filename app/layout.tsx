@@ -45,11 +45,6 @@ export default function RootLayout({
             <main className="container mx-auto max-w-7xl px-6 flex-grow">
               {children}
             </main>
-            <footer className="w-full flex items-center justify-center py-3">
-              <span className="text-default-500 text-sm">
-                嘴替机器人 - 让AI帮你吐槽
-              </span>
-            </footer>
           </div>
         </Providers>
         <Analytics />

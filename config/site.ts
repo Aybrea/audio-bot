@@ -8,11 +8,19 @@ export const siteConfig = {
       label: "首页",
       href: "/",
     },
+    {
+      label: "圣诞节",
+      href: "/christmas",
+    },
   ],
   navMenuItems: [
     {
       label: "首页",
       href: "/",
+    },
+    {
+      label: "圣诞节",
+      href: "/christmas",
     },
   ],
   links: {
