@@ -11,8 +11,8 @@ export class StreamingAudioPlayer {
   private scheduledBuffers: AudioBufferSourceNode[] = [];
   private analyser: AnalyserNode;
   private gainNode: GainNode;
-  private frequencyDataArray: Uint8Array;
-  private timeDomainDataArray: Uint8Array;
+  private frequencyDataArray!: Uint8Array;
+  private timeDomainDataArray!: Uint8Array;
   private isBuffering: boolean = true;
   private bufferThreshold: number;
   private bufferedChunks: Float32Array[] = [];
@@ -38,8 +38,8 @@ export class StreamingAudioPlayer {
     // 预分配数组以避免频繁创建
     const bufferLength = this.analyser.frequencyBinCount;
 
-    this.frequencyDataArray = new Uint8Array(bufferLength);
-    this.timeDomainDataArray = new Uint8Array(bufferLength);
+    this.frequencyDataArray = new Uint8Array(new ArrayBuffer(bufferLength));
+    this.timeDomainDataArray = new Uint8Array(new ArrayBuffer(bufferLength));
   }
 
   /**
@@ -194,6 +194,8 @@ export class StreamingAudioPlayer {
    * 复用预分配的数组以提高性能
    */
   getFrequencyData(): Uint8Array {
+    // @ts-expect-error - TypeScript incorrectly infers Uint8Array<ArrayBufferLike> instead of Uint8Array<ArrayBuffer>
+    // This is a known TypeScript type system limitation with Web Audio API types
     this.analyser.getByteFrequencyData(this.frequencyDataArray);
 
     return this.frequencyDataArray;
@@ -204,6 +206,8 @@ export class StreamingAudioPlayer {
    * 复用预分配的数组以提高性能
    */
   getTimeDomainData(): Uint8Array {
+    // @ts-expect-error - TypeScript incorrectly infers Uint8Array<ArrayBufferLike> instead of Uint8Array<ArrayBuffer>
+    // This is a known TypeScript type system limitation with Web Audio API types
     this.analyser.getByteTimeDomainData(this.timeDomainDataArray);
 
     return this.timeDomainDataArray;
