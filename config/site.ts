@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "嘴替机器人",
-  description: "让AI用你的声音帮你吐槽",
+  name: "locus",
+  description: "locus experimenti",
   navItems: [
     {
       label: "首页",
