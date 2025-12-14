@@ -32,6 +32,10 @@ export const siteConfig = {
       label: "EPUB阅读器",
       href: "/epub",
     },
+    {
+      label: "Live2D",
+      href: "/live2d",
+    },
   ],
   navMenuItems: [
     {
@@ -61,6 +65,10 @@ export const siteConfig = {
     {
       label: "EPUB阅读器",
       href: "/epub",
+    },
+    {
+      label: "Live2D",
+      href: "/live2d",
     },
   ],
   links: {
