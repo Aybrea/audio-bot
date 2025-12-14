@@ -17,10 +17,17 @@ import {
   readerReducer,
 } from "@/lib/epub-engine";
 import type { ReadingLocation } from "@/types/epub";
+import { getBook, updateLastReadTime } from "@/lib/epub-db";
+import ePub from "epubjs";
 
 const VIEWER_CONTAINER_ID = "epub-viewer-container";
 
-export default function EpubReader() {
+interface EpubReaderProps {
+  bookId?: string;
+  onClose?: () => void;
+}
+
+export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
   const loadedSettings = loadInitialSettings();
   const [state, dispatch] = useReducer(readerReducer, {
     ...initialReaderState,
@@ -345,6 +352,82 @@ export default function EpubReader() {
     }
   };
 
+  // Load book from IndexedDB if bookId is provided
+  useEffect(() => {
+    if (!bookId) return;
+
+    const loadBookFromDB = async () => {
+      dispatch({ type: "UPLOAD_START" });
+
+      try {
+        // Get book from IndexedDB
+        const storedBook = await getBook(bookId);
+
+        if (!storedBook) {
+          throw new Error("Book not found");
+        }
+
+        // Create book instance from ArrayBuffer
+        const book = ePub(storedBook.arrayBuffer);
+
+        // Wait for metadata and navigation to load
+        await book.loaded.metadata;
+        await book.loaded.navigation;
+
+        // Extract metadata
+        let coverUrl: string | undefined;
+
+        try {
+          if (typeof book.coverUrl === "function") {
+            coverUrl = (await book.coverUrl()) || undefined;
+          }
+        } catch (error) {
+          coverUrl = undefined;
+        }
+
+        const metadata = {
+          title: book.packaging.metadata.title || "Unknown Title",
+          author: book.packaging.metadata.creator || "Unknown Author",
+          identifier: storedBook.id,
+          cover: coverUrl || storedBook.cover,
+        };
+
+        // Parse TOC
+        const toc = book.navigation.toc.map((item: any) => ({
+          id: item.id || item.href,
+          label: item.label,
+          href: item.href,
+          subitems: item.subitems
+            ? item.subitems.map((sub: any) => ({
+                id: sub.id || sub.href,
+                label: sub.label,
+                href: sub.href,
+              }))
+            : undefined,
+        }));
+
+        dispatch({
+          type: "UPLOAD_SUCCESS",
+          book,
+          metadata,
+          toc,
+        });
+
+        // Update last read time
+        await updateLastReadTime(bookId);
+      } catch (error) {
+        console.error("Failed to load book from IndexedDB:", error);
+        dispatch({
+          type: "UPLOAD_ERROR",
+          error:
+            error instanceof Error ? error.message : "Failed to load book",
+        });
+      }
+    };
+
+    loadBookFromDB();
+  }, [bookId]);
+
   // Initialize rendition when book is loaded AND container is ready
   useEffect(() => {
     if (
@@ -572,6 +655,8 @@ export default function EpubReader() {
                     containerReady.current = false;
                     setCurrentChapter("");
                     dispatch({ type: "CLOSE_BOOK" });
+                    // Call onClose callback if provided
+                    onClose?.();
                   }}
                 >
                   <span className="hidden md:inline">关闭</span>
