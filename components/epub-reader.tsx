@@ -21,13 +21,145 @@ import type { ReadingLocation } from "@/types/epub";
 const VIEWER_CONTAINER_ID = "epub-viewer-container";
 
 export default function EpubReader() {
+  const loadedSettings = loadInitialSettings();
   const [state, dispatch] = useReducer(readerReducer, {
     ...initialReaderState,
-    settings: loadInitialSettings(),
+    settings: loadedSettings,
+    // If fixedFooter is false, footer should be hidden initially
+    footerVisible: loadedSettings.fixedFooter,
   });
   const renditionInitialized = useRef(false);
   const containerReady = useRef(false);
   const [currentChapter, setCurrentChapter] = useState<string>("");
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Animated page navigation
+  const navigateWithAnimation = useCallback(
+    async (direction: "next" | "prev") => {
+      if (!state.rendition || isAnimating) return;
+
+      setIsAnimating(true);
+
+      // Wait for fade out animation
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      // Navigate to next/prev page
+      if (direction === "next") {
+        state.rendition.next();
+      } else {
+        state.rendition.prev();
+      }
+
+      // Wait for page to load and fade in
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      setIsAnimating(false);
+    },
+    [state.rendition, isAnimating],
+  );
+
+  // Handle click navigation (left side = prev, right side = next)
+  const handleViewerClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!state.rendition || isAnimating) return;
+
+      const target = event.currentTarget;
+      const rect = target.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const width = rect.width;
+      const clickRatio = clickX / width;
+
+      // Left 40% = previous page, Right 40% = next page, Middle 20% = no action
+      if (clickRatio < 0.4) {
+        navigateWithAnimation("prev");
+      } else if (clickRatio > 0.6) {
+        navigateWithAnimation("next");
+      }
+      // Middle area (0.4 - 0.6) does nothing to avoid accidental page turns
+    },
+    [state.rendition, isAnimating, navigateWithAnimation],
+  );
+
+  // Click navigation for iframe content using epub.js hooks
+  useEffect(() => {
+    if (state.status !== "ready" || !state.rendition) return;
+
+    const handleContentClick = (event: MouseEvent) => {
+      console.log("Click detected:", {
+        clientX: event.clientX,
+        viewportWidth: window.innerWidth,
+        target: event.target,
+        isAnimating,
+      });
+
+      if (isAnimating) return;
+
+      // Get click position relative to the viewport
+      const clickX = event.clientX;
+      const viewportWidth = window.innerWidth;
+      const clickRatio = clickX / viewportWidth;
+
+      console.log("Click ratio:", clickRatio);
+
+      // Left 40% = previous page, Right 40% = next page, Middle 20% = no action
+      if (clickRatio < 0.4) {
+        console.log("Navigating to previous page");
+        event.preventDefault();
+        event.stopPropagation();
+        navigateWithAnimation("prev");
+      } else if (clickRatio > 0.6) {
+        console.log("Navigating to next page");
+        event.preventDefault();
+        event.stopPropagation();
+        navigateWithAnimation("next");
+      } else {
+        console.log("Click in middle area, no action");
+      }
+    };
+
+    // Use epub.js hooks to attach event to rendered content
+    const attachClickHandler = () => {
+      const iframe = state.rendition.manager?.container?.querySelector("iframe");
+
+      if (iframe?.contentDocument?.body) {
+        // Remove existing listener first to avoid duplicates
+        iframe.contentDocument.body.removeEventListener(
+          "click",
+          handleContentClick,
+        );
+        // Add new listener
+        iframe.contentDocument.body.addEventListener(
+          "click",
+          handleContentClick,
+          true,
+        ); // Use capture phase
+      }
+    };
+
+    // Attach after a short delay to ensure iframe is ready
+    const timer = setTimeout(attachClickHandler, 100);
+
+    // Re-attach when page changes
+    const handleDisplayed = () => {
+      setTimeout(attachClickHandler, 100);
+    };
+
+    state.rendition.on("displayed", handleDisplayed);
+
+    return () => {
+      clearTimeout(timer);
+      state.rendition.off("displayed", handleDisplayed);
+
+      const iframe = state.rendition.manager?.container?.querySelector("iframe");
+
+      if (iframe?.contentDocument?.body) {
+        iframe.contentDocument.body.removeEventListener(
+          "click",
+          handleContentClick,
+        );
+      }
+    };
+  }, [state.status, state.rendition, isAnimating, navigateWithAnimation]);
 
   // Native touch event handlers (inspired by 2048 game)
   useEffect(() => {
@@ -68,19 +200,52 @@ export default function EpubReader() {
       const dy = touchEndY - touchStartY;
       const absDy = Math.abs(dy);
 
-      // Minimum swipe distance
-      if (Math.max(absDx, absDy) > 50) {
+      const totalMovement = Math.max(absDx, absDy);
+
+      // Distinguish between tap and swipe
+      if (totalMovement < 10) {
+        // This is a tap (not a swipe)
+        const viewportWidth = window.innerWidth;
+        const tapRatio = touchEndX / viewportWidth;
+
+        console.log("Tap detected:", {
+          touchEndX,
+          viewportWidth,
+          tapRatio,
+        });
+
+        // Left 30% = previous page, Right 30% = next page, Middle 40% = toggle footer or no action
+        if (tapRatio < 0.3) {
+          console.log("Tap on left side -> previous page");
+          navigateWithAnimation("prev");
+        } else if (tapRatio > 0.7) {
+          console.log("Tap on right side -> next page");
+          navigateWithAnimation("next");
+        } else {
+          // Middle area: toggle footer if not fixed
+          if (!state.settings.fixedFooter) {
+            console.log("Tap in middle area -> toggle footer");
+            dispatch({ type: "TOGGLE_FOOTER" });
+          } else {
+            console.log("Tap in middle area -> no action (fixed footer mode)");
+          }
+        }
+      } else if (totalMovement > 50) {
+        // This is a swipe
         // Horizontal swipe is dominant
         if (absDx > absDy) {
           if (dx > 0) {
+            console.log("Swipe right -> previous page");
             // Swipe right -> previous page
-            state.rendition?.prev();
+            navigateWithAnimation("prev");
           } else {
+            console.log("Swipe left -> next page");
             // Swipe left -> next page
-            state.rendition?.next();
+            navigateWithAnimation("next");
           }
         }
       }
+      // Movement between 10-50px: ignore (might be accidental)
     };
 
     // Attach to container element
@@ -309,10 +474,10 @@ export default function EpubReader() {
 
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        state.rendition.prev();
+        navigateWithAnimation("prev");
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        state.rendition.next();
+        navigateWithAnimation("next");
       }
     };
 
@@ -321,7 +486,7 @@ export default function EpubReader() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [state.status, state.rendition]);
+  }, [state.status, state.rendition, navigateWithAnimation]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -367,50 +532,67 @@ export default function EpubReader() {
           }}
         >
           {/* Header - Mobile Optimized */}
-          <header className="flex-shrink-0 border-b border-divider px-3 py-2 md:px-4 md:py-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-sm md:text-lg font-semibold truncate">
-                  {state.metadata.title}
-                </h1>
-                <div className="flex items-center gap-2 text-xs md:text-sm text-default-500">
-                  <span className="truncate">{state.metadata.author}</span>
-                  {state.currentLocation && (
-                    <>
-                      <span>•</span>
-                      <span>{state.currentLocation.percentage}%</span>
-                    </>
-                  )}
+          {(state.settings.fixedFooter || state.footerVisible) && (
+            <header
+              className={`
+                ${
+                  state.settings.fixedFooter
+                    ? "flex-shrink-0"
+                    : "absolute top-0 left-0 right-0 z-50 shadow-lg"
+                }
+                border-b border-divider px-3 py-2 md:px-4 md:py-3
+                bg-background transition-all duration-300
+                ${state.footerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
+              `}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-sm md:text-lg font-semibold truncate">
+                    {state.metadata.title}
+                  </h1>
+                  <div className="flex items-center gap-2 text-xs md:text-sm text-default-500">
+                    <span className="truncate">{state.metadata.author}</span>
+                    {state.currentLocation && (
+                      <>
+                        <span>•</span>
+                        <span>{state.currentLocation.percentage}%</span>
+                      </>
+                    )}
+                  </div>
                 </div>
+                <Button
+                  color="default"
+                  size="sm"
+                  variant="flat"
+                  isIconOnly
+                  className="md:w-auto md:px-4"
+                  onPress={() => {
+                    // Reset refs before closing
+                    renditionInitialized.current = false;
+                    containerReady.current = false;
+                    setCurrentChapter("");
+                    dispatch({ type: "CLOSE_BOOK" });
+                  }}
+                >
+                  <span className="hidden md:inline">关闭</span>
+                  <span className="md:hidden">✕</span>
+                </Button>
               </div>
-              <Button
-                color="default"
-                size="sm"
-                variant="flat"
-                isIconOnly
-                className="md:w-auto md:px-4"
-                onPress={() => {
-                  // Reset refs before closing
-                  renditionInitialized.current = false;
-                  containerReady.current = false;
-                  setCurrentChapter("");
-                  dispatch({ type: "CLOSE_BOOK" });
-                }}
-              >
-                <span className="hidden md:inline">关闭</span>
-                <span className="md:hidden">✕</span>
-              </Button>
-            </div>
-            {/* Chapter info - Hidden on mobile, shown on desktop */}
-            {currentChapter && (
-              <p className="hidden md:block text-xs text-default-400 truncate mt-1">
-                {currentChapter}
-              </p>
-            )}
-          </header>
+              {/* Chapter info - Hidden on mobile, shown on desktop */}
+              {currentChapter && (
+                <p className="hidden md:block text-xs text-default-400 truncate mt-1">
+                  {currentChapter}
+                </p>
+              )}
+            </header>
+          )}
 
           {/* Viewer - Full Height with Native Touch Support */}
-          <div className="flex-1 overflow-hidden">
+          <div
+            className="flex-1 overflow-hidden transition-opacity duration-300 cursor-pointer"
+            style={{ opacity: isAnimating ? 0 : 1 }}
+            onClick={handleViewerClick}
+          >
             <EpubViewer
               containerId={VIEWER_CONTAINER_ID}
               onReady={handleContainerReady}
@@ -418,22 +600,27 @@ export default function EpubReader() {
           </div>
 
           {/* Footer - Mobile Optimized */}
-          <footer className="flex-shrink-0 border-t border-divider px-3 py-2 md:px-4 md:py-3 safe-area-inset-bottom">
-            <EpubControls
-              onNext={() => {
-                if (state.rendition) {
-                  state.rendition.next();
+          {(state.settings.fixedFooter || state.footerVisible) && (
+            <footer
+              className={`
+                ${
+                  state.settings.fixedFooter
+                    ? "flex-shrink-0"
+                    : "absolute bottom-0 left-0 right-0 z-50 shadow-lg"
                 }
-              }}
-              onPrev={() => {
-                if (state.rendition) {
-                  state.rendition.prev();
-                }
-              }}
-              onToggleToc={() => dispatch({ type: "TOGGLE_TOC" })}
-              onToggleSettings={() => dispatch({ type: "TOGGLE_SETTINGS" })}
-            />
-          </footer>
+                border-t border-divider px-3 py-2 md:px-4 md:py-3 safe-area-inset-bottom
+                bg-background transition-all duration-300
+                ${state.footerVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}
+              `}
+            >
+              <EpubControls
+                onNext={() => navigateWithAnimation("next")}
+                onPrev={() => navigateWithAnimation("prev")}
+                onToggleToc={() => dispatch({ type: "TOGGLE_TOC" })}
+                onToggleSettings={() => dispatch({ type: "TOGGLE_SETTINGS" })}
+              />
+            </footer>
+          )}
 
           {/* TOC Modal */}
           <EpubToc
@@ -450,6 +637,9 @@ export default function EpubReader() {
             onClose={() => dispatch({ type: "TOGGLE_SETTINGS" })}
             onFontSizeChange={(fontSize) =>
               dispatch({ type: "UPDATE_FONT_SIZE", fontSize })
+            }
+            onFixedFooterChange={(fixedFooter) =>
+              dispatch({ type: "UPDATE_FIXED_FOOTER", fixedFooter })
             }
           />
         </div>

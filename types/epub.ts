@@ -26,6 +26,7 @@ export interface ReaderSettings {
   fontSize: number;
   fontFamily?: string;
   theme?: "light" | "dark" | "sepia";
+  fixedFooter: boolean; // Whether to keep footer always visible
 }
 
 export interface ReaderState {
@@ -38,6 +39,7 @@ export interface ReaderState {
   settings: ReaderSettings;
   tocOpen: boolean;
   settingsOpen: boolean;
+  footerVisible: boolean; // Whether footer is currently visible (for non-fixed mode)
   errorMessage: string | null;
 }
 
@@ -53,5 +55,7 @@ export type ReaderAction =
   | { type: "TOGGLE_TOC" }
   | { type: "TOGGLE_SETTINGS" }
   | { type: "UPDATE_FONT_SIZE"; fontSize: number }
+  | { type: "UPDATE_FIXED_FOOTER"; fixedFooter: boolean }
+  | { type: "TOGGLE_FOOTER" }
   | { type: "CLOSE_BOOK" }
   | { type: "RESTORE_PROGRESS"; location: string };

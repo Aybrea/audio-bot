@@ -7,6 +7,7 @@ import {
   ModalContent,
   ModalHeader,
 } from "@heroui/modal";
+import { Switch } from "@heroui/switch";
 
 import type { ReaderSettings } from "@/types/epub";
 
@@ -15,6 +16,7 @@ interface EpubSettingsProps {
   settings: ReaderSettings;
   onClose: () => void;
   onFontSizeChange: (fontSize: number) => void;
+  onFixedFooterChange: (fixedFooter: boolean) => void;
 }
 
 export function EpubSettings({
@@ -22,6 +24,7 @@ export function EpubSettings({
   settings,
   onClose,
   onFontSizeChange,
+  onFixedFooterChange,
 }: EpubSettingsProps) {
   const handleIncrease = () => {
     const newSize = Math.min(settings.fontSize + 2, 32);
@@ -72,6 +75,22 @@ export function EpubSettings({
               <p className="text-xs text-default-400 text-center">
                 范围: 12px - 32px
               </p>
+            </div>
+
+            {/* Fixed Footer Control */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-semibold">固定控制栏</label>
+                  <p className="text-xs text-default-400">
+                    关闭后，点击屏幕中央呼出控制栏
+                  </p>
+                </div>
+                <Switch
+                  isSelected={settings.fixedFooter}
+                  onValueChange={onFixedFooterChange}
+                />
+              </div>
             </div>
 
             {/* Preview Text */}

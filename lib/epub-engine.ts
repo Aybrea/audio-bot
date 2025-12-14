@@ -27,9 +27,11 @@ export const initialReaderState: ReaderState = {
     fontSize: 18,
     fontFamily: "serif",
     theme: "light",
+    fixedFooter: true, // Default to fixed footer
   },
   tocOpen: false,
   settingsOpen: false,
+  footerVisible: true, // Default to visible
   errorMessage: null,
 };
 
@@ -105,7 +107,21 @@ export async function initializeRendition(
     spread: "none",
     flow: "paginated",
     allowScriptedContent: true,
+    snap: true, // Enable snapping for smoother transitions
   });
+
+  // Register animation theme
+  rendition.themes.register("animated", {
+    "body": {
+      "transition": "opacity 0.3s ease-in-out !important",
+    },
+    "*": {
+      "transition": "opacity 0.3s ease-in-out !important",
+    },
+  });
+
+  // Apply animation theme
+  rendition.themes.select("animated");
 
   // Apply settings
   rendition.themes.fontSize(`${settings.fontSize}px`);
@@ -244,6 +260,29 @@ export function readerReducer(
         settings: newSettings,
       };
     }
+
+    case "UPDATE_FIXED_FOOTER": {
+      const newSettings = {
+        ...state.settings,
+        fixedFooter: action.fixedFooter,
+      };
+
+      // Save to localStorage
+      saveSettings(newSettings);
+
+      return {
+        ...state,
+        settings: newSettings,
+        // If switching to fixed mode, make footer visible
+        footerVisible: action.fixedFooter ? true : state.footerVisible,
+      };
+    }
+
+    case "TOGGLE_FOOTER":
+      return {
+        ...state,
+        footerVisible: !state.footerVisible,
+      };
 
     case "CLOSE_BOOK":
       // Clean up rendition
