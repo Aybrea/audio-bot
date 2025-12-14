@@ -1,7 +1,23 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Spinner } from "@heroui/spinner";
 
 import { title } from "@/components/primitives";
-import Game2048 from "@/components/game-2048";
+
+// 懒加载 2048 游戏组件
+const Game2048 = dynamic(() => import("@/components/game-2048"), {
+  loading: () => (
+    <div className="flex items-center justify-center min-h-[600px]">
+      <div className="text-center">
+        <Spinner color="warning" size="lg" />
+        <p className="mt-4 text-default-600">加载游戏中...</p>
+      </div>
+    </div>
+  ),
+  ssr: false, // 游戏依赖浏览器 API，禁用 SSR
+});
 
 export default function Game2048Page() {
   return (

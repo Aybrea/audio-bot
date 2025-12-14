@@ -1,11 +1,10 @@
 "use client";
 
 import type { Dispatch } from "react";
+import type { GameAction } from "@/lib/game-2048-engine";
 
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
-
-import type { GameAction } from "@/lib/game-2048-engine";
 
 interface Game2048ControlsProps {
   dispatch: Dispatch<GameAction>;

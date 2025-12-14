@@ -1,7 +1,23 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Spinner } from "@heroui/spinner";
 
 import { title } from "@/components/primitives";
-import TetrisGame from "@/components/tetris-game";
+
+// 懒加载 Tetris 游戏组件
+const TetrisGame = dynamic(() => import("@/components/tetris-game"), {
+  loading: () => (
+    <div className="flex items-center justify-center min-h-[600px]">
+      <div className="text-center">
+        <Spinner color="pink" size="lg" />
+        <p className="mt-4 text-default-600">加载游戏中...</p>
+      </div>
+    </div>
+  ),
+  ssr: false, // 游戏依赖浏览器 API，禁用 SSR
+});
 
 export default function TetrisPage() {
   return (

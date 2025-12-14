@@ -1,9 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
+import { Spinner } from "@heroui/spinner";
 
 import { EpubLibrary } from "./epub-library";
-import EpubReader from "./epub-reader";
+
+// 懒加载 EpubReader 组件（包含 epubjs 库）
+const EpubReader = dynamic(() => import("./epub-reader"), {
+  loading: () => (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <Spinner color="primary" size="lg" />
+        <p className="mt-4 text-default-600">加载阅读器中...</p>
+      </div>
+    </div>
+  ),
+  ssr: false, // EPUB 阅读器依赖浏览器 API，禁用 SSR
+});
 
 export function EpubPageContent() {
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);

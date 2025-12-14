@@ -1,7 +1,23 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Spinner } from "@heroui/spinner";
 
 import { title } from "@/components/primitives";
-import FlappyGame from "@/components/flappy-game";
+
+// 懒加载 Flappy Bird 游戏组件
+const FlappyGame = dynamic(() => import("@/components/flappy-game"), {
+  loading: () => (
+    <div className="flex items-center justify-center min-h-[600px]">
+      <div className="text-center">
+        <Spinner color="warning" size="lg" />
+        <p className="mt-4 text-default-600">加载游戏中...</p>
+      </div>
+    </div>
+  ),
+  ssr: false, // 游戏依赖浏览器 API，禁用 SSR
+});
 
 export default function FlappyPage() {
   return (
