@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { Button } from "@heroui/button";
+import { Spinner } from "@heroui/spinner";
 
 import { EpubUpload } from "./epub-upload";
 import { EpubViewer } from "./epub-viewer";
@@ -36,9 +37,10 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
     footerVisible: loadedSettings.fixedFooter,
   });
   const renditionInitialized = useRef(false);
-  const containerReady = useRef(false);
+  const [containerReady, setContainerReady] = useState(false);
   const [currentChapter, setCurrentChapter] = useState<string>("");
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isOpeningBook, setIsOpeningBook] = useState(false);
 
   // Animated page navigation
   const navigateWithAnimation = useCallback(
@@ -357,7 +359,7 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
     if (!bookId) return;
 
     const loadBookFromDB = async () => {
-      dispatch({ type: "UPLOAD_START" });
+      setIsOpeningBook(true);
 
       try {
         // Get book from IndexedDB
@@ -415,6 +417,8 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
 
         // Update last read time
         await updateLastReadTime(bookId);
+
+        setIsOpeningBook(false);
       } catch (error) {
         console.error("Failed to load book from IndexedDB:", error);
         dispatch({
@@ -422,6 +426,7 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
           error:
             error instanceof Error ? error.message : "Failed to load book",
         });
+        setIsOpeningBook(false);
       }
     };
 
@@ -434,7 +439,7 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
       state.status === "ready" &&
       state.book &&
       state.metadata &&
-      containerReady.current &&
+      containerReady &&
       !renditionInitialized.current
     ) {
       const initRendition = async () => {
@@ -510,12 +515,11 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
 
       initRendition();
     }
-  }, [state.status, state.book, state.metadata, state.settings]);
+  }, [state.status, state.book, state.metadata, state.settings, containerReady]);
 
   // Handle container ready
   const handleContainerReady = useCallback(() => {
-    if (containerReady.current) return; // Prevent multiple calls
-    containerReady.current = true;
+    setContainerReady(true);
   }, []);
 
   // Disable browser gestures globally when reader is active
@@ -579,6 +583,15 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
       }
     };
   }, [state.rendition]);
+
+  // Show loading state when opening book from library
+  if (isOpeningBook) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner label="打开中" size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-4 md:gap-6 w-full">
@@ -650,9 +663,9 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
                   isIconOnly
                   className="md:w-auto md:px-4"
                   onPress={() => {
-                    // Reset refs before closing
+                    // Reset state before closing
                     renditionInitialized.current = false;
-                    containerReady.current = false;
+                    setContainerReady(false);
                     setCurrentChapter("");
                     dispatch({ type: "CLOSE_BOOK" });
                     // Call onClose callback if provided

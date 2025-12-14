@@ -10,6 +10,7 @@ import {
   ModalFooter,
   ModalHeader,
 } from "@heroui/modal";
+import { Spinner } from "@heroui/spinner";
 
 import { EpubBookCard } from "./epub-book-card";
 import { EpubUpload } from "./epub-upload";
@@ -143,11 +144,8 @@ export function EpubLibrary({ onOpenBook }: EpubLibraryProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-default-500">加载中...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner label="加载中" size="lg" />
       </div>
     );
   }
