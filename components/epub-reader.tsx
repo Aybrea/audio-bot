@@ -29,38 +29,119 @@ export default function EpubReader() {
   const containerReady = useRef(false);
   const [currentChapter, setCurrentChapter] = useState<string>("");
 
-  // Touch swipe state for mobile navigation
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  // Native touch event handlers (inspired by 2048 game)
+  useEffect(() => {
+    if (state.status !== "ready" || !state.rendition) return;
 
-  const minSwipeDistance = 50; // Minimum swipe distance in pixels
+    // Get the actual epub viewer container element (like 2048 gets game-container)
+    const viewerElement = document.getElementById(VIEWER_CONTAINER_ID);
 
-  // Touch swipe handlers
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
+    if (!viewerElement) return;
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
+    let touchStartX: number;
+    let touchStartY: number;
 
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length > 1) return; // Ignore multi-touch
 
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
 
-    if (isLeftSwipe && state.rendition) {
-      // Swipe left -> next page
-      state.rendition.next();
-    }
-    if (isRightSwipe && state.rendition) {
-      // Swipe right -> previous page
-      state.rendition.prev();
-    }
-  };
+      // Prevent browser gestures immediately
+      event.preventDefault();
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      // Prevent browser gestures during move
+      event.preventDefault();
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length > 0) return; // Ignore if still touching
+
+      const touchEndX = event.changedTouches[0].clientX;
+      const touchEndY = event.changedTouches[0].clientY;
+
+      const dx = touchEndX - touchStartX;
+      const absDx = Math.abs(dx);
+
+      const dy = touchEndY - touchStartY;
+      const absDy = Math.abs(dy);
+
+      // Minimum swipe distance
+      if (Math.max(absDx, absDy) > 50) {
+        // Horizontal swipe is dominant
+        if (absDx > absDy) {
+          if (dx > 0) {
+            // Swipe right -> previous page
+            state.rendition?.prev();
+          } else {
+            // Swipe left -> next page
+            state.rendition?.next();
+          }
+        }
+      }
+    };
+
+    // Attach to container element
+    viewerElement.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    viewerElement.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    viewerElement.addEventListener("touchend", handleTouchEnd, {
+      passive: false,
+    });
+
+    // Also attach to iframe content (epub.js renders in iframe)
+    const attachToIframe = () => {
+      const iframe = viewerElement.querySelector("iframe");
+
+      if (iframe && iframe.contentDocument) {
+        const iframeDoc = iframe.contentDocument;
+
+        iframeDoc.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        iframeDoc.addEventListener("touchmove", handleTouchMove, {
+          passive: false,
+        });
+        iframeDoc.addEventListener("touchend", handleTouchEnd, {
+          passive: false,
+        });
+      }
+    };
+
+    // Attach immediately if iframe exists
+    attachToIframe();
+
+    // Also attach when rendition relocates (new page might create new iframe)
+    const handleRelocated = () => {
+      attachToIframe();
+    };
+
+    state.rendition.on("relocated", handleRelocated);
+
+    return () => {
+      viewerElement.removeEventListener("touchstart", handleTouchStart);
+      viewerElement.removeEventListener("touchmove", handleTouchMove);
+      viewerElement.removeEventListener("touchend", handleTouchEnd);
+
+      // Remove from iframe if it exists
+      const iframe = viewerElement.querySelector("iframe");
+
+      if (iframe && iframe.contentDocument) {
+        const iframeDoc = iframe.contentDocument;
+
+        iframeDoc.removeEventListener("touchstart", handleTouchStart);
+        iframeDoc.removeEventListener("touchmove", handleTouchMove);
+        iframeDoc.removeEventListener("touchend", handleTouchEnd);
+      }
+
+      state.rendition.off("relocated", handleRelocated);
+    };
+  }, [state.status, state.rendition]);
 
   // Helper function to find chapter name from TOC
   const findChapterName = (href: string, toc: any[]): string => {
@@ -170,50 +251,6 @@ export default function EpubReader() {
             type: "RENDITION_READY",
             rendition,
           });
-
-          // Add touch event listeners to rendition's iframe for mobile swipe
-          // Wait a bit for iframe to be ready
-          setTimeout(() => {
-            const iframe = document.querySelector(
-              `#${VIEWER_CONTAINER_ID} iframe`,
-            ) as HTMLIFrameElement;
-
-            if (iframe && iframe.contentDocument) {
-              const iframeDoc = iframe.contentDocument;
-
-              let touchStartX: number | null = null;
-              let touchEndX: number | null = null;
-              const minSwipeDistance = 50;
-
-              const handleTouchStart = (e: TouchEvent) => {
-                touchEndX = null;
-                touchStartX = e.touches[0].clientX;
-              };
-
-              const handleTouchMove = (e: TouchEvent) => {
-                touchEndX = e.touches[0].clientX;
-              };
-
-              const handleTouchEnd = () => {
-                if (!touchStartX || !touchEndX) return;
-
-                const distance = touchStartX - touchEndX;
-                const isLeftSwipe = distance > minSwipeDistance;
-                const isRightSwipe = distance < -minSwipeDistance;
-
-                if (isLeftSwipe && rendition) {
-                  rendition.next();
-                }
-                if (isRightSwipe && rendition) {
-                  rendition.prev();
-                }
-              };
-
-              iframeDoc.addEventListener("touchstart", handleTouchStart);
-              iframeDoc.addEventListener("touchmove", handleTouchMove);
-              iframeDoc.addEventListener("touchend", handleTouchEnd);
-            }
-          }, 500);
         } catch (error) {
           console.error("Failed to initialize rendition:", error);
           dispatch({
@@ -232,6 +269,38 @@ export default function EpubReader() {
     if (containerReady.current) return; // Prevent multiple calls
     containerReady.current = true;
   }, []);
+
+  // Disable browser gestures globally when reader is active
+  useEffect(() => {
+    if (state.status === "ready") {
+      // Save original styles
+      const originalHtmlStyle = {
+        overscrollBehaviorX: document.documentElement.style.overscrollBehaviorX,
+        touchAction: document.documentElement.style.touchAction,
+      };
+      const originalBodyStyle = {
+        overscrollBehaviorX: document.body.style.overscrollBehaviorX,
+        touchAction: document.body.style.touchAction,
+      };
+
+      // Apply styles to disable gestures
+      document.documentElement.style.overscrollBehaviorX = "none";
+      document.documentElement.style.touchAction = "pan-y";
+      document.body.style.overscrollBehaviorX = "none";
+      document.body.style.touchAction = "pan-y";
+
+      // Cleanup on unmount
+      return () => {
+        document.documentElement.style.overscrollBehaviorX =
+          originalHtmlStyle.overscrollBehaviorX;
+        document.documentElement.style.touchAction =
+          originalHtmlStyle.touchAction;
+        document.body.style.overscrollBehaviorX =
+          originalBodyStyle.overscrollBehaviorX;
+        document.body.style.touchAction = originalBodyStyle.touchAction;
+      };
+    }
+  }, [state.status]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -290,7 +359,13 @@ export default function EpubReader() {
 
       {/* Reader State - Full Screen Layout */}
       {state.status === "ready" && state.metadata && (
-        <div className="fixed inset-0 flex flex-col bg-background">
+        <div
+          className="fixed inset-0 flex flex-col bg-background"
+          style={{
+            overscrollBehaviorX: "none",
+            touchAction: "pan-y",
+          }}
+        >
           {/* Header - Mobile Optimized */}
           <header className="flex-shrink-0 border-b border-divider px-3 py-2 md:px-4 md:py-3">
             <div className="flex items-center justify-between gap-2">
@@ -334,13 +409,8 @@ export default function EpubReader() {
             )}
           </header>
 
-          {/* Viewer - Full Height with Touch Support */}
-          <div
-            className="flex-1 overflow-hidden"
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-          >
+          {/* Viewer - Full Height with Native Touch Support */}
+          <div className="flex-1 overflow-hidden">
             <EpubViewer
               containerId={VIEWER_CONTAINER_ID}
               onReady={handleContainerReady}
