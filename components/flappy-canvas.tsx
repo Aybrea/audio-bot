@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import type { Bird, Pipe } from "@/types/flappy";
+
+import { useEffect, useRef } from "react";
+
 import { getBirdRotation } from "@/lib/flappy-physics";
 import { GROUND_HEIGHT } from "@/lib/flappy-engine";
 
@@ -119,12 +121,7 @@ function drawPipe(
   const groundY = canvasHeight - GROUND_HEIGHT;
 
   // Pipe gradient
-  const gradient = ctx.createLinearGradient(
-    pipe.x,
-    0,
-    pipe.x + pipe.width,
-    0,
-  );
+  const gradient = ctx.createLinearGradient(pipe.x, 0, pipe.x + pipe.width, 0);
 
   gradient.addColorStop(0, "#2ECC71"); // Green
   gradient.addColorStop(0.5, "#27AE60"); // Darker green

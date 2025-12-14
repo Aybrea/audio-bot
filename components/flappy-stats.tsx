@@ -1,7 +1,8 @@
 "use client";
 
-import { Card, CardBody } from "@heroui/card";
 import type { GameStatus } from "@/types/flappy";
+
+import { Card, CardBody } from "@heroui/card";
 
 interface FlappyStatsProps {
   score: number;

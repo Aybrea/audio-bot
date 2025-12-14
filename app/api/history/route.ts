@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   if (!month || !day) {
     return NextResponse.json(
       { error: "Month and day are required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
           "User-Agent": "Mozilla/5.0 (compatible; HistoryApp/1.0)",
           "Api-User-Agent": "HistoryApp/1.0 (contact@example.com)",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       { error: "Failed to fetch history data" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

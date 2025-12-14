@@ -24,10 +24,10 @@ export function FlappyGameOver({
 }: FlappyGameOverProps) {
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={onPlayAgain}
-      placement="center"
       backdrop="blur"
+      isOpen={isOpen}
+      placement="center"
+      onClose={onPlayAgain}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
@@ -56,10 +56,10 @@ export function FlappyGameOver({
         </ModalBody>
         <ModalFooter>
           <Button
+            className="w-full font-bold"
             color="warning"
             size="lg"
             onPress={onPlayAgain}
-            className="w-full font-bold"
           >
             Play Again
           </Button>

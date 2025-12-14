@@ -38,9 +38,7 @@ export function saveReadingProgress(
 }
 
 // Load reading progress for a specific book
-export function loadReadingProgress(
-  bookId: string,
-): ReadingLocation | null {
+export function loadReadingProgress(bookId: string): ReadingLocation | null {
   if (typeof window === "undefined") return null;
 
   try {

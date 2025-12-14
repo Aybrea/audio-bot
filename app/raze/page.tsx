@@ -24,22 +24,27 @@ export default function RazePage() {
           <CardBody className="p-0 flex items-center justify-center relative">
             <video
               ref={videoRef}
-              className="max-w-full max-h-[85vh] w-auto h-auto"
               controls
-              preload="metadata"
-              poster={process.env.NEXT_PUBLIC_RAZE_VIDEO_POSTER || "/video/cover.jpg"}
-              onEnded={handleVideoEnd}
+              className="max-w-full max-h-[85vh] w-auto h-auto"
               crossOrigin="anonymous"
+              poster={
+                process.env.NEXT_PUBLIC_RAZE_VIDEO_POSTER || "/video/cover.jpg"
+              }
+              preload="metadata"
+              onEnded={handleVideoEnd}
             >
               <source
-                src={process.env.NEXT_PUBLIC_RAZE_VIDEO_URL || "/video/Chainsaw-Man-RezeDance.mp4"}
+                src={
+                  process.env.NEXT_PUBLIC_RAZE_VIDEO_URL ||
+                  "/video/Chainsaw-Man-RezeDance.mp4"
+                }
                 type="video/mp4"
               />
               您的浏览器不支持视频播放。
             </video>
             <VideoLyricsOverlay
-              videoRef={videoRef}
               lrcPath="/video/IRIS OUT - segment.lrc"
+              videoRef={videoRef}
             />
           </CardBody>
         </Card>
@@ -51,10 +56,10 @@ export default function RazePage() {
           onAnimationEnd={handleAnimationEnd}
         >
           <img
-            src={process.env.NEXT_PUBLIC_RAZE_END_IMAGE || "/video/haoye.webp"}
             alt="End animation"
             className="w-auto h-auto max-w-full animate-rise-up"
             crossOrigin="anonymous"
+            src={process.env.NEXT_PUBLIC_RAZE_END_IMAGE || "/video/haoye.webp"}
           />
         </div>
       )}

@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalHeader,
-} from "@heroui/modal";
-
 import type { TOCItem } from "@/types/epub";
+
+import { Modal, ModalBody, ModalContent, ModalHeader } from "@heroui/modal";
 
 interface EpubTocProps {
   isOpen: boolean;
@@ -33,7 +28,7 @@ function TocItemComponent({ item, onNavigate, level = 0 }: TocItemProps) {
         className={`
           w-full text-left py-2 px-3 rounded-lg
           hover:bg-default-100 transition-colors
-          ${level > 0 ? "ml-" + (level * 4) : ""}
+          ${level > 0 ? "ml-" + level * 4 : ""}
         `}
         style={{ paddingLeft: `${level * 16 + 12}px` }}
         onClick={handleClick}
@@ -59,12 +54,7 @@ function TocItemComponent({ item, onNavigate, level = 0 }: TocItemProps) {
 
 export function EpubToc({ isOpen, toc, onClose, onNavigate }: EpubTocProps) {
   return (
-    <Modal
-      isOpen={isOpen}
-      scrollBehavior="inside"
-      size="2xl"
-      onClose={onClose}
-    >
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <h2 className="text-xl font-bold">目录</h2>

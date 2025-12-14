@@ -124,19 +124,19 @@ export default function FlappyGame() {
     <div className="flex flex-col items-center gap-4 md:gap-6">
       {/* Stats */}
       <FlappyStats
-        score={gameState.score}
-        highScore={gameState.highScore}
         gameStatus={gameState.gameStatus}
+        highScore={gameState.highScore}
+        score={gameState.score}
       />
 
       {/* Game Canvas */}
       <div className="relative">
         <FlappyCanvas
           bird={gameState.bird}
+          canvasHeight={gameState.canvasHeight}
+          canvasWidth={gameState.canvasWidth}
           pipes={gameState.pipes}
           score={gameState.score}
-          canvasWidth={gameState.canvasWidth}
-          canvasHeight={gameState.canvasHeight}
         />
 
         {/* Menu Overlay */}
@@ -147,10 +147,10 @@ export default function FlappyGame() {
                 Flappy Bird
               </h2>
               <Button
+                className="font-bold"
                 color="warning"
                 size="lg"
                 onPress={handleStart}
-                className="font-bold"
               >
                 Start Game
               </Button>
@@ -169,10 +169,10 @@ export default function FlappyGame() {
                 Paused
               </h2>
               <Button
+                className="font-bold"
                 color="warning"
                 size="lg"
                 onPress={handlePause}
-                className="font-bold"
               >
                 Resume
               </Button>
@@ -192,9 +192,9 @@ export default function FlappyGame() {
 
       {/* Game Over Modal */}
       <FlappyGameOver
+        highScore={gameState.highScore}
         isOpen={gameState.gameStatus === "gameOver"}
         score={gameState.score}
-        highScore={gameState.highScore}
         onPlayAgain={handleStart}
       />
     </div>

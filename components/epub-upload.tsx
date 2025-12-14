@@ -11,7 +11,10 @@ interface EpubUploadProps {
   isLoading?: boolean;
 }
 
-export function EpubUpload({ onFileSelect, isLoading = false }: EpubUploadProps) {
+export function EpubUpload({
+  onFileSelect,
+  isLoading = false,
+}: EpubUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,9 +108,7 @@ export function EpubUpload({ onFileSelect, isLoading = false }: EpubUploadProps)
               </Button>
             )}
 
-            {error && (
-              <p className="text-danger text-sm mt-2">{error}</p>
-            )}
+            {error && <p className="text-danger text-sm mt-2">{error}</p>}
           </div>
         </div>
 

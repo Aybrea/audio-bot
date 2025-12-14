@@ -1,11 +1,12 @@
-import ePub from "epubjs";
-
 import type {
   BookMetadata,
   ReaderAction,
   ReaderState,
   TOCItem,
 } from "@/types/epub";
+
+import ePub from "epubjs";
+
 import { generateBookId, readFileAsArrayBuffer } from "@/lib/epub-utils";
 import {
   addRecentBook,
@@ -112,11 +113,11 @@ export async function initializeRendition(
 
   // Register animation theme
   rendition.themes.register("animated", {
-    "body": {
-      "transition": "opacity 0.3s ease-in-out !important",
+    body: {
+      transition: "opacity 0.3s ease-in-out !important",
     },
     "*": {
-      "transition": "opacity 0.3s ease-in-out !important",
+      transition: "opacity 0.3s ease-in-out !important",
     },
   });
 

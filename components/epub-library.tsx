@@ -155,10 +155,7 @@ export function EpubLibrary({ onOpenBook }: EpubLibraryProps) {
       {/* Upload Section */}
       {showUpload && (
         <div className="mb-8">
-          <EpubUpload
-            isLoading={isUploading}
-            onFileSelect={handleFileSelect}
-          />
+          <EpubUpload isLoading={isUploading} onFileSelect={handleFileSelect} />
         </div>
       )}
 
@@ -170,11 +167,7 @@ export function EpubLibrary({ onOpenBook }: EpubLibraryProps) {
           <p className="text-default-500 mb-6">
             点击下方按钮上传您的第一本 EPUB 电子书
           </p>
-          <Button
-            color="primary"
-            size="lg"
-            onPress={() => setShowUpload(true)}
-          >
+          <Button color="primary" size="lg" onPress={() => setShowUpload(true)}>
             + 添加书籍
           </Button>
         </div>

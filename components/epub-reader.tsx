@@ -1,8 +1,11 @@
 "use client";
 
+import type { ReadingLocation } from "@/types/epub";
+
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
+import ePub from "epubjs";
 
 import { EpubUpload } from "./epub-upload";
 import { EpubViewer } from "./epub-viewer";
@@ -17,9 +20,7 @@ import {
   loadInitialSettings,
   readerReducer,
 } from "@/lib/epub-engine";
-import type { ReadingLocation } from "@/types/epub";
 import { getBook, updateLastReadTime } from "@/lib/epub-db";
-import ePub from "epubjs";
 
 const VIEWER_CONTAINER_ID = "epub-viewer-container";
 
@@ -128,7 +129,8 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
 
     // Use epub.js hooks to attach event to rendered content
     const attachClickHandler = () => {
-      const iframe = state.rendition.manager?.container?.querySelector("iframe");
+      const iframe =
+        state.rendition.manager?.container?.querySelector("iframe");
 
       if (iframe?.contentDocument?.body) {
         // Remove existing listener first to avoid duplicates
@@ -159,7 +161,8 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
       clearTimeout(timer);
       state.rendition.off("displayed", handleDisplayed);
 
-      const iframe = state.rendition.manager?.container?.querySelector("iframe");
+      const iframe =
+        state.rendition.manager?.container?.querySelector("iframe");
 
       if (iframe?.contentDocument?.body) {
         iframe.contentDocument.body.removeEventListener(
@@ -423,8 +426,7 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
         console.error("Failed to load book from IndexedDB:", error);
         dispatch({
           type: "UPLOAD_ERROR",
-          error:
-            error instanceof Error ? error.message : "Failed to load book",
+          error: error instanceof Error ? error.message : "Failed to load book",
         });
         setIsOpeningBook(false);
       }
@@ -515,7 +517,13 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
 
       initRendition();
     }
-  }, [state.status, state.book, state.metadata, state.settings, containerReady]);
+  }, [
+    state.status,
+    state.book,
+    state.metadata,
+    state.settings,
+    containerReady,
+  ]);
 
   // Handle container ready
   const handleContainerReady = useCallback(() => {
@@ -598,10 +606,7 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
       {/* Upload or Error State */}
       {(state.status === "idle" || state.status === "error") && (
         <div className="w-full flex flex-col items-center gap-4">
-          <EpubUpload
-            isLoading={false}
-            onFileSelect={handleFileSelect}
-          />
+          <EpubUpload isLoading={false} onFileSelect={handleFileSelect} />
           {state.errorMessage && (
             <div className="text-danger text-center max-w-2xl">
               <p className="font-semibold">错误</p>
@@ -657,11 +662,11 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
                   </div>
                 </div>
                 <Button
+                  isIconOnly
+                  className="md:w-auto md:px-4"
                   color="default"
                   size="sm"
                   variant="flat"
-                  isIconOnly
-                  className="md:w-auto md:px-4"
                   onPress={() => {
                     // Reset state before closing
                     renditionInitialized.current = false;
@@ -714,8 +719,8 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
               <EpubControls
                 onNext={() => navigateWithAnimation("next")}
                 onPrev={() => navigateWithAnimation("prev")}
-                onToggleToc={() => dispatch({ type: "TOGGLE_TOC" })}
                 onToggleSettings={() => dispatch({ type: "TOGGLE_SETTINGS" })}
+                onToggleToc={() => dispatch({ type: "TOGGLE_TOC" })}
               />
             </footer>
           )}
@@ -733,11 +738,11 @@ export default function EpubReader({ bookId, onClose }: EpubReaderProps = {}) {
             isOpen={state.settingsOpen}
             settings={state.settings}
             onClose={() => dispatch({ type: "TOGGLE_SETTINGS" })}
-            onFontSizeChange={(fontSize) =>
-              dispatch({ type: "UPDATE_FONT_SIZE", fontSize })
-            }
             onFixedFooterChange={(fixedFooter) =>
               dispatch({ type: "UPDATE_FIXED_FOOTER", fixedFooter })
+            }
+            onFontSizeChange={(fontSize) =>
+              dispatch({ type: "UPDATE_FONT_SIZE", fontSize })
             }
           />
         </div>

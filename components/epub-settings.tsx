@@ -1,15 +1,10 @@
 "use client";
 
-import { Button } from "@heroui/button";
-import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalHeader,
-} from "@heroui/modal";
-import { Switch } from "@heroui/switch";
-
 import type { ReaderSettings } from "@/types/epub";
+
+import { Button } from "@heroui/button";
+import { Modal, ModalBody, ModalContent, ModalHeader } from "@heroui/modal";
+import { Switch } from "@heroui/switch";
 
 interface EpubSettingsProps {
   isOpen: boolean;

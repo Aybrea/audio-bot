@@ -45,7 +45,12 @@ export interface ReaderState {
 
 export type ReaderAction =
   | { type: "UPLOAD_START" }
-  | { type: "UPLOAD_SUCCESS"; book: any; metadata: BookMetadata; toc: TOCItem[] }
+  | {
+      type: "UPLOAD_SUCCESS";
+      book: any;
+      metadata: BookMetadata;
+      toc: TOCItem[];
+    }
   | { type: "UPLOAD_ERROR"; error: string }
   | { type: "RENDITION_READY"; rendition: any }
   | { type: "LOCATION_CHANGED"; location: ReadingLocation }

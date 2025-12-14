@@ -1,4 +1,5 @@
 import type { Bird, Pipe, GameState, GameAction } from "@/types/flappy";
+
 import { updateBirdPosition, applyFlap } from "./flappy-physics";
 import { checkCollisions } from "./flappy-collision";
 
@@ -136,10 +137,7 @@ export const initialGameState: GameState = {
 };
 
 // Main game reducer
-export function gameReducer(
-  state: GameState,
-  action: GameAction,
-): GameState {
+export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "START_GAME": {
       const bird = createBird(action.canvasHeight);

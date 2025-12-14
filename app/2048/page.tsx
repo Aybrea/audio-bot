@@ -1,20 +1,20 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
 import { title } from "@/components/primitives";
-import FlappyGame from "@/components/flappy-game";
+import Game2048 from "@/components/game-2048";
 
-export default function FlappyPage() {
+export default function Game2048Page() {
   return (
     <section className="flex flex-col items-center justify-center gap-4 md:gap-6 py-4 md:py-8 px-2 md:px-4">
       <div className="inline-block max-w-xl text-center justify-center">
-        <h1 className={title({ color: "yellow" })}>Flappy Bird</h1>
+        <h1 className={title({ color: "yellow" })}>2048</h1>
         <p className="mt-2 md:mt-4 text-sm md:text-base text-default-600">
-          Tap to flap and avoid the pipes!
+          Join the numbers and get to the 2048 tile!
         </p>
       </div>
 
       <div className="w-full max-w-4xl">
-        <FlappyGame />
+        <Game2048 />
       </div>
 
       {/* Instructions */}
@@ -25,16 +25,16 @@ export default function FlappyPage() {
           </CardHeader>
           <CardBody className="gap-2">
             <p className="text-xs md:text-sm text-default-600">
-              <strong>Desktop:</strong> Press SPACE, UP ARROW, or CLICK to flap.
-              Press P to pause.
+              <strong>Controls:</strong> Use your arrow keys (↑ ↓ ← →) to move
+              the tiles.
             </p>
             <p className="text-xs md:text-sm text-default-600">
-              <strong>Mobile:</strong> Tap anywhere on the canvas or use the
-              flap button.
+              <strong>Goal:</strong> When two tiles with the same number touch,
+              they merge into one! Keep merging to reach the 2048 tile.
             </p>
             <p className="text-xs md:text-sm text-default-600">
-              <strong>Goal:</strong> Navigate through pipes without hitting
-              them. Game speeds up as you score!
+              <strong>Tip:</strong> Plan your moves carefully - the game ends
+              when you can&apos;t make any more moves!
             </p>
           </CardBody>
         </Card>

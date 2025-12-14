@@ -20,10 +20,7 @@ export function applyFlap(): number {
 }
 
 // Update bird position based on velocity
-export function updateBirdPosition(
-  bird: Bird,
-  deltaTime: number = 1,
-): Bird {
+export function updateBirdPosition(bird: Bird, deltaTime: number = 1): Bird {
   const newVelocity = applyGravity(bird.velocity, GRAVITY, deltaTime);
   const newY = bird.y + newVelocity * deltaTime;
 

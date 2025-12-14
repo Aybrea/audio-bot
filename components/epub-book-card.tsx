@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 
 interface EpubBookCardProps {
@@ -43,10 +42,7 @@ export function EpubBookCard({
   };
 
   return (
-    <div
-      className="w-full cursor-pointer"
-      onClick={() => onOpen(id)}
-    >
+    <div className="w-full cursor-pointer" onClick={() => onOpen(id)}>
       <Card className="w-full">
         <CardBody className="p-0">
           {/* Cover Image */}
@@ -76,35 +72,29 @@ export function EpubBookCard({
             )}
           </div>
         </CardBody>
-      <CardFooter className="flex flex-col items-start gap-2 p-3">
-        {/* Title */}
-        <h3 className="text-sm font-semibold line-clamp-2 w-full">
-          {title}
-        </h3>
-        {/* Author */}
-        <p className="text-xs text-default-500 line-clamp-1 w-full">
-          {author}
-        </p>
-        {/* Progress */}
-        {progress > 0 && (
-          <div className="w-full">
-            <Progress
-              aria-label="Reading progress"
-              className="w-full"
-              color="primary"
-              size="sm"
-              value={progress}
-            />
-            <p className="text-xs text-default-400 mt-1">
-              已读 {progress}%
-            </p>
-          </div>
-        )}
-        {/* Last Read */}
-        <p className="text-xs text-default-400">
-          {formatDate(lastReadAt)}
-        </p>
-      </CardFooter>
+        <CardFooter className="flex flex-col items-start gap-2 p-3">
+          {/* Title */}
+          <h3 className="text-sm font-semibold line-clamp-2 w-full">{title}</h3>
+          {/* Author */}
+          <p className="text-xs text-default-500 line-clamp-1 w-full">
+            {author}
+          </p>
+          {/* Progress */}
+          {progress > 0 && (
+            <div className="w-full">
+              <Progress
+                aria-label="Reading progress"
+                className="w-full"
+                color="primary"
+                size="sm"
+                value={progress}
+              />
+              <p className="text-xs text-default-400 mt-1">已读 {progress}%</p>
+            </div>
+          )}
+          {/* Last Read */}
+          <p className="text-xs text-default-400">{formatDate(lastReadAt)}</p>
+        </CardFooter>
       </Card>
     </div>
   );

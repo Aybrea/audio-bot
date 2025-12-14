@@ -20,10 +20,10 @@ export function EpubControls({
       <div className="flex items-center justify-between gap-2 md:justify-center md:gap-4">
         {/* Previous Button */}
         <Button
+          className="flex-1 md:flex-none"
           color="primary"
           size="lg"
           variant="flat"
-          className="flex-1 md:flex-none"
           onPress={onPrev}
         >
           <span className="md:hidden">←</span>
@@ -33,19 +33,19 @@ export function EpubControls({
         {/* Feature Controls */}
         <div className="flex items-center gap-2">
           <Button
-            color="default"
-            variant="bordered"
-            size="md"
             isIconOnly
+            color="default"
+            size="md"
+            variant="bordered"
             onPress={onToggleToc}
           >
             📑
           </Button>
           <Button
-            color="default"
-            variant="bordered"
-            size="md"
             isIconOnly
+            color="default"
+            size="md"
+            variant="bordered"
             onPress={onToggleSettings}
           >
             ⚙️
@@ -54,10 +54,10 @@ export function EpubControls({
 
         {/* Next Button */}
         <Button
+          className="flex-1 md:flex-none"
           color="primary"
           size="lg"
           variant="flat"
-          className="flex-1 md:flex-none"
           onPress={onNext}
         >
           <span className="md:hidden">→</span>

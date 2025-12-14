@@ -1,4 +1,4 @@
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 
 import { title } from "@/components/primitives";
@@ -50,7 +50,7 @@ async function getHistoryData() {
           "Api-User-Agent": "HistoryApp/1.0 (contact@example.com)",
         },
         next: { revalidate: 3600 }, // Revalidate every hour
-      }
+      },
     );
 
     if (!response.ok) {
@@ -125,14 +125,17 @@ export default async function HistoryPage() {
               {data.selected.slice(0, 3).map((event, index) => {
                 // Try to find a page with an image
                 const pageWithImage = event.pages?.find(
-                  (p) => p.thumbnail || p.originalimage
+                  (p) => p.thumbnail || p.originalimage,
                 );
                 const imageSrc =
                   pageWithImage?.thumbnail?.source ||
                   pageWithImage?.originalimage?.source;
 
                 return (
-                  <Card key={index} className="hover:shadow-lg transition-shadow">
+                  <Card
+                    key={index}
+                    className="hover:shadow-lg transition-shadow"
+                  >
                     <CardBody>
                       <div className="flex gap-4">
                         {/* 左侧列：年份和图片 */}
