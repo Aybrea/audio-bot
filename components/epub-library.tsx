@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
 
 import { EpubBookCard } from "./epub-book-card";
 import { EpubUpload } from "./epub-upload";
@@ -29,6 +36,11 @@ export function EpubLibrary({ onOpenBook }: EpubLibraryProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   // Load books from IndexedDB
   const loadBooks = async () => {
@@ -87,13 +99,25 @@ export function EpubLibrary({ onOpenBook }: EpubLibraryProps) {
     }
   };
 
-  // Handle delete book
-  const handleDeleteBook = async (bookId: string) => {
-    if (!confirm("确定要删除这本书吗？")) return;
+  // Handle delete book - show confirmation modal
+  const handleDeleteBook = (bookId: string) => {
+    const book = books.find((b) => b.id === bookId);
+
+    if (book) {
+      setBookToDelete({ id: book.id, title: book.title });
+      setDeleteConfirmOpen(true);
+    }
+  };
+
+  // Confirm delete book
+  const confirmDeleteBook = async () => {
+    if (!bookToDelete) return;
 
     try {
-      await deleteBook(bookId);
+      await deleteBook(bookToDelete.id);
       await loadBooks();
+      setDeleteConfirmOpen(false);
+      setBookToDelete(null);
     } catch (error) {
       console.error("Failed to delete book:", error);
       alert("删除失败");
@@ -173,6 +197,38 @@ export function EpubLibrary({ onOpenBook }: EpubLibraryProps) {
           ))}
         </div>
       ) : null}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteConfirmOpen}
+        placement="center"
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setBookToDelete(null);
+        }}
+      >
+        <ModalContent>
+          <ModalHeader className="flex justify-center">确认删除</ModalHeader>
+          <ModalBody className="text-center">
+            <p>确定要删除《{bookToDelete?.title}》吗？</p>
+          </ModalBody>
+          <ModalFooter className="flex justify-center gap-2">
+            <Button
+              color="default"
+              variant="flat"
+              onPress={() => {
+                setDeleteConfirmOpen(false);
+                setBookToDelete(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button color="danger" onPress={confirmDeleteBook}>
+              删除
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
