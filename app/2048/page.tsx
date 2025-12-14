@@ -5,10 +5,10 @@ import Game2048 from "@/components/game-2048";
 
 export default function Game2048Page() {
   return (
-    <section className="flex flex-col items-center justify-center gap-4 md:gap-6 py-4 md:py-8 px-2 md:px-4">
+    <section className="flex flex-col items-center justify-center gap-2 md:gap-6 py-2 md:py-8 px-2 md:px-4">
       <div className="inline-block max-w-xl text-center justify-center">
         <h1 className={title({ color: "yellow" })}>2048</h1>
-        <p className="mt-2 md:mt-4 text-sm md:text-base text-default-600">
+        <p className="mt-1 md:mt-4 text-xs md:text-base text-default-600">
           Join the numbers and get to the 2048 tile!
         </p>
       </div>
@@ -17,8 +17,8 @@ export default function Game2048Page() {
         <Game2048 />
       </div>
 
-      {/* Instructions */}
-      <div className="w-full max-w-2xl mt-4 md:mt-8 px-2">
+      {/* Instructions - Hidden on mobile */}
+      <div className="hidden lg:block w-full max-w-2xl mt-4 md:mt-8 px-2">
         <Card>
           <CardHeader>
             <h3 className="text-base md:text-lg font-semibold">How to Play</h3>

@@ -8,9 +8,14 @@ interface Game2048BoardProps {
 }
 
 export function Game2048Board({ tiles, size }: Game2048BoardProps) {
-  // Calculate cell size and gap based on container
-  const cellSize = 106.25;
-  const gap = 15;
+  // Calculate cell size and gap based on screen size
+  // Desktop: 106.25px cells, 15px gap
+  // Mobile: 57.5px cells, 10px gap
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  const cellSize = isMobile ? 57.5 : 106.25;
+  const gap = isMobile ? 10 : 15;
+  const containerSize = isMobile ? 280 : 530;
+  const containerPadding = isMobile ? 10 : 15;
 
   // Get tile position in pixels
   const getTilePosition = (x: number, y: number) => {
@@ -49,15 +54,33 @@ export function Game2048Board({ tiles, size }: Game2048BoardProps) {
   };
 
   return (
-    <div className="relative bg-[#bbada0] rounded-md p-[15px] w-[530px] h-[530px] mx-auto">
+    <div
+      className="relative bg-[#bbada0] rounded-md mx-auto"
+      style={{
+        padding: `${containerPadding}px`,
+        width: `${containerSize}px`,
+        height: `${containerSize}px`,
+      }}
+    >
       {/* Background grid */}
       <div className="relative z-[1]">
         {Array.from({ length: size }).map((_, rowIndex) => (
-          <div key={rowIndex} className="flex gap-[15px] mb-[15px] last:mb-0">
+          <div
+            key={rowIndex}
+            className="flex last:mb-0"
+            style={{
+              gap: `${gap}px`,
+              marginBottom: rowIndex < size - 1 ? `${gap}px` : "0",
+            }}
+          >
             {Array.from({ length: size }).map((_, colIndex) => (
               <div
                 key={colIndex}
-                className="w-[106.25px] h-[106.25px] rounded-[3px] bg-[rgba(238,228,218,0.35)]"
+                className="rounded-[3px] bg-[rgba(238,228,218,0.35)]"
+                style={{
+                  width: `${cellSize}px`,
+                  height: `${cellSize}px`,
+                }}
               />
             ))}
           </div>
@@ -65,7 +88,13 @@ export function Game2048Board({ tiles, size }: Game2048BoardProps) {
       </div>
 
       {/* Tiles */}
-      <div className="absolute top-[15px] left-[15px] z-[2]">
+      <div
+        className="absolute z-[2]"
+        style={{
+          top: `${containerPadding}px`,
+          left: `${containerPadding}px`,
+        }}
+      >
         {tiles.map((tile) => (
           <div
             key={tile.id}
@@ -75,7 +104,12 @@ export function Game2048Board({ tiles, size }: Game2048BoardProps) {
             }}
           >
             <div
-              className={`w-[107px] h-[107px] rounded-[3px] flex items-center justify-center font-bold ${getTileColorClass(tile.value)} ${getFontSize(tile.value)} ${tile.isNew ? "animate-tile-appear" : ""} ${tile.mergedFrom ? "animate-tile-pop" : ""}`}
+              className={`rounded-[3px] flex items-center justify-center font-bold ${getTileColorClass(tile.value)} ${getFontSize(tile.value)} ${tile.isNew ? "animate-tile-appear" : ""} ${tile.mergedFrom ? "animate-tile-pop" : ""}`}
+              style={{
+                width: `${cellSize + 1}px`,
+                height: `${cellSize + 1}px`,
+                lineHeight: `${cellSize + 1}px`,
+              }}
             >
               {tile.value}
             </div>

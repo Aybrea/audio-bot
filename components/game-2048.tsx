@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 
@@ -10,6 +10,7 @@ import { gameReducer, initialGameState } from "@/lib/game-2048-engine";
 
 export default function Game2048() {
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   // Keyboard controls
   useEffect(() => {
@@ -45,6 +46,83 @@ export default function Game2048() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameState.gameStatus, gameState.keepPlaying]);
 
+  // Touch controls
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (gameState.gameStatus === "menu") return;
+      if (gameState.gameStatus === "gameOver") return;
+      if (gameState.gameStatus === "won" && !gameState.keepPlaying) return;
+
+      // Prevent browser gestures (swipe to go back, pull to refresh, etc.)
+      e.preventDefault();
+
+      const touch = e.touches[0];
+
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (gameState.gameStatus === "menu") return;
+      if (gameState.gameStatus === "gameOver") return;
+      if (gameState.gameStatus === "won" && !gameState.keepPlaying) return;
+
+      // Prevent browser gestures during swipe
+      e.preventDefault();
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      if (gameState.gameStatus === "menu") return;
+      if (gameState.gameStatus === "gameOver") return;
+      if (gameState.gameStatus === "won" && !gameState.keepPlaying) return;
+
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - touchStartRef.current.x;
+      const deltaY = touch.clientY - touchStartRef.current.y;
+
+      // Minimum swipe distance
+      const minSwipeDistance = 30;
+
+      if (
+        Math.abs(deltaX) < minSwipeDistance &&
+        Math.abs(deltaY) < minSwipeDistance
+      ) {
+        touchStartRef.current = null;
+
+        return;
+      }
+
+      // Determine direction based on larger delta
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // Horizontal swipe
+        if (deltaX > 0) {
+          dispatch({ type: "MOVE", direction: 1 }); // Right
+        } else {
+          dispatch({ type: "MOVE", direction: 3 }); // Left
+        }
+      } else {
+        // Vertical swipe
+        if (deltaY > 0) {
+          dispatch({ type: "MOVE", direction: 2 }); // Down
+        } else {
+          dispatch({ type: "MOVE", direction: 0 }); // Up
+        }
+      }
+
+      touchStartRef.current = null;
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd);
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [gameState.gameStatus, gameState.keepPlaying]);
+
   return (
     <div className="w-full">
       {gameState.gameStatus === "menu" ? (
@@ -67,25 +145,25 @@ export default function Game2048() {
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-4 md:gap-6">
+        <div className="flex flex-col items-center gap-2 md:gap-4">
           {/* Score display */}
-          <div className="flex gap-4">
+          <div className="flex gap-2 md:gap-4">
             <Card className="bg-[#bbada0]">
-              <CardBody className="p-4 text-center min-w-[100px]">
-                <div className="text-xs text-[#eee4da] uppercase mb-1">
+              <CardBody className="p-2 md:p-4 text-center min-w-[80px] md:min-w-[100px]">
+                <div className="text-[10px] md:text-xs text-[#eee4da] uppercase mb-0.5 md:mb-1">
                   Score
                 </div>
-                <div className="text-2xl font-bold text-white">
+                <div className="text-lg md:text-2xl font-bold text-white">
                   {gameState.score}
                 </div>
               </CardBody>
             </Card>
             <Card className="bg-[#bbada0]">
-              <CardBody className="p-4 text-center min-w-[100px]">
-                <div className="text-xs text-[#eee4da] uppercase mb-1">
+              <CardBody className="p-2 md:p-4 text-center min-w-[80px] md:min-w-[100px]">
+                <div className="text-[10px] md:text-xs text-[#eee4da] uppercase mb-0.5 md:mb-1">
                   Best
                 </div>
-                <div className="text-2xl font-bold text-white">
+                <div className="text-lg md:text-2xl font-bold text-white">
                   {gameState.bestScore}
                 </div>
               </CardBody>
@@ -96,9 +174,10 @@ export default function Game2048() {
           <Game2048Board size={gameState.size} tiles={gameState.tiles} />
 
           {/* Controls */}
-          <div className="flex gap-4">
+          <div className="flex gap-2 md:gap-4">
             <Button
               color="default"
+              size="sm"
               variant="bordered"
               onPress={() => dispatch({ type: "RESTART_GAME" })}
             >
@@ -107,11 +186,15 @@ export default function Game2048() {
           </div>
 
           {/* Instructions */}
-          <div className="text-center text-sm text-default-600 max-w-md">
-            <p>
+          <div className="text-center text-xs md:text-sm text-default-600 max-w-md px-4">
+            <p className="hidden lg:block">
               <strong>How to play:</strong> Use your arrow keys to move the
               tiles. When two tiles with the same number touch, they merge into
               one!
+            </p>
+            <p className="lg:hidden">
+              <strong>How to play:</strong> Swipe to move tiles. When two tiles
+              with the same number touch, they merge into one!
             </p>
           </div>
         </div>
