@@ -84,6 +84,23 @@ export function EpubLibrary({ onOpenBook }: EpubLibraryProps) {
       // Read file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
 
+      // Convert blob URL to base64 if needed
+      if (metadata.cover && metadata.cover.startsWith("blob:")) {
+        try {
+          const response = await fetch(metadata.cover);
+          const blob = await response.blob();
+          const reader = new FileReader();
+
+          metadata.cover = await new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.error("Failed to convert cover to base64:", error);
+          metadata.cover = undefined;
+        }
+      }
+
       // Save to IndexedDB
       await saveBook(metadata, arrayBuffer);
 
