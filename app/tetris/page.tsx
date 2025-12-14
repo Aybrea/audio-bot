@@ -11,7 +11,7 @@ const TetrisGame = dynamic(() => import("@/components/tetris-game"), {
   loading: () => (
     <div className="flex items-center justify-center min-h-[600px]">
       <div className="text-center">
-        <Spinner color="pink" size="lg" />
+        <Spinner color="secondary" size="lg" />
         <p className="mt-4 text-default-600">加载游戏中...</p>
       </div>
     </div>
