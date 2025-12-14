@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "Live2D 角色互动",
   description: "与可爱的 2D 角色进行实时互动，支持鼠标跟踪和点击交互",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function Live2DLayout({

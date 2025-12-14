@@ -22,8 +22,8 @@ interface Live2DCharacterProps {
 
 export default function Live2DCharacter({
   modelUrl = "/models/hiyori/shizuku.model.json",
-  width = 800,
-  height = 600,
+  width,
+  height,
 }: Live2DCharacterProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
@@ -31,6 +31,23 @@ export default function Live2DCharacter({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modelLoaded, setModelLoaded] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+
+  // 响应式尺寸计算
+  useEffect(() => {
+    const updateDimensions = () => {
+      const isMobile = window.innerWidth < 768;
+      const newWidth = width || (isMobile ? window.innerWidth - 32 : 800);
+      const newHeight = height || (isMobile ? 500 : 600);
+
+      setDimensions({ width: newWidth, height: newHeight });
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, [width, height]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -80,8 +97,8 @@ export default function Live2DCharacter({
 
         // 创建 PIXI 应用（PIXI.js 7.x API）
         const app = new PIXI.Application({
-          width,
-          height,
+          width: dimensions.width,
+          height: dimensions.height,
           backgroundAlpha: 0,
           antialias: true,
         });
@@ -109,25 +126,39 @@ export default function Live2DCharacter({
         modelRef.current = model;
         app.stage.addChild(model);
 
-        // 设置模型位置和缩放
+        // 设置模型位置和缩放（响应式）
         const scale = Math.min(
-          width / model.width,
-          height / model.height,
+          dimensions.width / model.width,
+          dimensions.height / model.height,
         ) * 0.8;
 
         model.scale.set(scale);
-        model.x = width / 2;
-        model.y = height / 2;
+        model.x = dimensions.width / 2;
+        model.y = dimensions.height / 2;
         model.anchor.set(0.5, 0.5);
 
-        // 鼠标跟踪
+        // 鼠标和触摸跟踪（支持移动端）
         app.stage.eventMode = "static";
         app.stage.hitArea = app.screen;
+
+        // 同时支持鼠标和触摸事件
         app.stage.on("pointermove", (e: any) => {
           if (modelRef.current) {
             const point = e.global;
 
             modelRef.current.focus(point.x, point.y);
+          }
+        });
+
+        // 触摸移动事件（移动端）
+        app.stage.on("touchmove", (e: any) => {
+          if (modelRef.current && e.touches && e.touches.length > 0) {
+            const touch = e.touches[0];
+            const rect = app.view.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            modelRef.current.focus(x, y);
           }
         });
 
@@ -174,7 +205,11 @@ export default function Live2DCharacter({
 
   const playRandomMotion = () => {
     if (modelRef.current) {
-      modelRef.current.motion("idle");
+      // 随机播放更明显的动作
+      const motions = ["tap_body", "shake", "flick_head", "pinch_in", "pinch_out"];
+      const randomMotion = motions[Math.floor(Math.random() * motions.length)];
+
+      modelRef.current.motion(randomMotion);
     }
   };
 
@@ -185,12 +220,12 @@ export default function Live2DCharacter({
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-4 w-full px-2 md:px-4">
       <Card className="w-full max-w-4xl">
-        <CardBody className="p-0">
+        <CardBody className="p-0 overflow-hidden">
           <div
             className="relative flex items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950"
-            style={{ width, height }}
+            style={{ width: dimensions.width, height: dimensions.height }}
           >
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -219,22 +254,32 @@ export default function Live2DCharacter({
 
       {modelLoaded && (
         <Card className="w-full max-w-4xl">
-          <CardBody>
+          <CardBody className="p-4 md:p-6">
             <div className="flex flex-col gap-4">
               <div>
-                <h3 className="text-lg font-semibold mb-2">交互说明</h3>
-                <ul className="text-sm text-default-600 space-y-1">
-                  <li>• 移动鼠标：角色眼睛会跟随鼠标移动</li>
+                <h3 className="text-base md:text-lg font-semibold mb-2">交互说明</h3>
+                <ul className="text-xs md:text-sm text-default-600 space-y-1">
+                  <li>• 移动鼠标/手指：角色眼睛会跟随移动</li>
                   <li>• 点击角色：触发不同的动作和表情</li>
                   <li>• 使用下方按钮：播放随机动作或表情</li>
                 </ul>
               </div>
 
-              <div className="flex gap-2">
-                <Button color="primary" onPress={playRandomMotion}>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  className="w-full sm:w-auto"
+                  color="primary"
+                  size="lg"
+                  onPress={playRandomMotion}
+                >
                   播放动作
                 </Button>
-                <Button color="secondary" onPress={playRandomExpression}>
+                <Button
+                  className="w-full sm:w-auto"
+                  color="secondary"
+                  size="lg"
+                  onPress={playRandomExpression}
+                >
                   切换表情
                 </Button>
               </div>
